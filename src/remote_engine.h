@@ -18,34 +18,15 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  */
+#ifndef REMOTE_ENGINE_H
+#define REMOTE_ENGINE_H
 
 #include "runtime_config.h"
-#include "play_engine.h"
-#include "remote_engine.h"
 
-#include <iostream>
-#include <thread>
-#include <future>
-#include <boost/log/trivial.hpp>
+namespace RemoteEngine {
 
-using namespace std;
+void start(const RuntimeConfig &config);
 
-int main(int argc, char* argv[]) {
-    try {
-        RuntimeConfig config;
-        config.ReadConfigFromFilesAndCmdLine(argc, argv);
+};
 
-        auto pef = async(launch::async, PlayEngine::start, config);
-        // auto cef = async(launch::async, RemoteEngine::start, config); 
-        BOOST_LOG_TRIVIAL(debug) << "main thread waiting for play engine quit";
-        return pef.get(); // wait until the player receives the quit command
-    }
-    catch (exception &e) {
-        cerr << "error: " << e.what() << "\n";
-        return 1;
-    }
-    catch (...){
-        cerr << "Exception of unknown type!\n";
-    }
-    return 0;
-}
+#endif

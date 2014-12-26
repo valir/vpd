@@ -19,33 +19,20 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "runtime_config.h"
-#include "play_engine.h"
 #include "remote_engine.h"
+#include "client_connection.h"
 
-#include <iostream>
-#include <thread>
-#include <future>
 #include <boost/log/trivial.hpp>
+#include <future>
+#include <thread>
+
+namespace RemoteEngine {
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
-    try {
-        RuntimeConfig config;
-        config.ReadConfigFromFilesAndCmdLine(argc, argv);
+void start(const RuntimeConfig &config) {
+    BOOST_LOG_TRIVIAL(debug) << "RemoteEngine start";
 
-        auto pef = async(launch::async, PlayEngine::start, config);
-        // auto cef = async(launch::async, RemoteEngine::start, config); 
-        BOOST_LOG_TRIVIAL(debug) << "main thread waiting for play engine quit";
-        return pef.get(); // wait until the player receives the quit command
-    }
-    catch (exception &e) {
-        cerr << "error: " << e.what() << "\n";
-        return 1;
-    }
-    catch (...){
-        cerr << "Exception of unknown type!\n";
-    }
-    return 0;
+}
+
 }

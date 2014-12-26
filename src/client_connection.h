@@ -1,5 +1,5 @@
 /*
- * This file is part of the Video Player Daemon
+ * This file is part of the VPD project
  * 
  * Copyright (C) 2014 Valentin Rusu kde@rusu.info
  * 
@@ -19,33 +19,22 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "runtime_config.h"
-#include "play_engine.h"
-#include "remote_engine.h"
+#ifndef  CLIENT_CONNECTION_INC
+#define  CLIENT_CONNECTION_INC
 
-#include <iostream>
-#include <thread>
-#include <future>
-#include <boost/log/trivial.hpp>
+#include "runtime_config.h"
+#include <string>
+#include <boost/asio.hpp>
+#include <memory>
 
 using namespace std;
+namespace io = boost::asio;
 
-int main(int argc, char* argv[]) {
-    try {
-        RuntimeConfig config;
-        config.ReadConfigFromFilesAndCmdLine(argc, argv);
+namespace ClientConnection
+{
 
-        auto pef = async(launch::async, PlayEngine::start, config);
-        // auto cef = async(launch::async, RemoteEngine::start, config); 
-        BOOST_LOG_TRIVIAL(debug) << "main thread waiting for play engine quit";
-        return pef.get(); // wait until the player receives the quit command
-    }
-    catch (exception &e) {
-        cerr << "error: " << e.what() << "\n";
-        return 1;
-    }
-    catch (...){
-        cerr << "Exception of unknown type!\n";
-    }
-    return 0;
-}
+void start(io::ip::tcp::socket);
+
+} // namespace ClientConnection
+
+#endif // CLIENT_CONNECTION_INC

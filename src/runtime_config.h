@@ -1,5 +1,5 @@
 /*
- * This file is part of the Video Player Daemon
+ * This file is part of the VPD project
  * 
  * Copyright (C) 2014 Valentin Rusu kde@rusu.info
  * 
@@ -18,34 +18,19 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  */
+#ifndef  runtime_config_INC
+#define  runtime_config_INC
 
-#include "runtime_config.h"
-#include "play_engine.h"
-#include "remote_engine.h"
-
-#include <iostream>
-#include <thread>
-#include <future>
-#include <boost/log/trivial.hpp>
+#include <string>
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
-    try {
-        RuntimeConfig config;
-        config.ReadConfigFromFilesAndCmdLine(argc, argv);
+struct RuntimeConfig {
+    int vlc_start_delay_;
+    string listen_port_;
+    string listen_address_;
+   
+    static bool ReadConfigFromFilesAndCmdLine(int argc, char* argv[]);
+};
 
-        auto pef = async(launch::async, PlayEngine::start, config);
-        // auto cef = async(launch::async, RemoteEngine::start, config); 
-        BOOST_LOG_TRIVIAL(debug) << "main thread waiting for play engine quit";
-        return pef.get(); // wait until the player receives the quit command
-    }
-    catch (exception &e) {
-        cerr << "error: " << e.what() << "\n";
-        return 1;
-    }
-    catch (...){
-        cerr << "Exception of unknown type!\n";
-    }
-    return 0;
-}
+#endif   /* ----- #ifndef runtime_config_INC  ----- */

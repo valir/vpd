@@ -1,5 +1,5 @@
 /*
- * This file is part of the Video Player Daemon
+ * This file is part of the VPD project
  * 
  * Copyright (C) 2014 Valentin Rusu kde@rusu.info
  * 
@@ -19,33 +19,30 @@
  * Boston, MA 02110-1301, USA.
  */
 
+#ifndef  PLAY_ENGINE_INC
+#define  PLAY_ENGINE_INC
+
 #include "runtime_config.h"
-#include "play_engine.h"
-#include "remote_engine.h"
 
-#include <iostream>
-#include <thread>
-#include <future>
-#include <boost/log/trivial.hpp>
+namespace PlayEngine {
 
-using namespace std;
+template <typename Request, typename Reply>
+struct EngineMessage
+{
+    enum EngineCommand {
+        PLAYER_STATUS,
+        PLAYER_START,
+        PLAYER_STOP,
+        PLAYER_PAUSE
+    };
 
-int main(int argc, char* argv[]) {
-    try {
-        RuntimeConfig config;
-        config.ReadConfigFromFilesAndCmdLine(argc, argv);
+    EngineCommand engineCommand_;
+    Request request_;
+    Reply reply_;
+};
 
-        auto pef = async(launch::async, PlayEngine::start, config);
-        // auto cef = async(launch::async, RemoteEngine::start, config); 
-        BOOST_LOG_TRIVIAL(debug) << "main thread waiting for play engine quit";
-        return pef.get(); // wait until the player receives the quit command
-    }
-    catch (exception &e) {
-        cerr << "error: " << e.what() << "\n";
-        return 1;
-    }
-    catch (...){
-        cerr << "Exception of unknown type!\n";
-    }
-    return 0;
-}
+int start(const RuntimeConfig &config);
+
+} // namespace PlayEngine
+
+#endif // PLAY_ENGINE_INC
