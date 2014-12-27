@@ -1,0 +1,5 @@
+find_package(Boost REQUIRED unit_test_framework)
+
+add_executable(test_client_connection client_connection.cpp)
+target_link_libraries(test_client_connection ${Boost_LIBRARIES})
+add_test(test_client_connection test_client_connection)

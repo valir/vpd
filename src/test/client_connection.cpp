@@ -18,35 +18,10 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  */
+#define BOOST_TEST_MODULE ClientConnection
+#include <boost/test/included/unit_test.hpp>
 
-#include "runtime_config.h"
-#include "play_engine.h"
-#include "remote_engine.h"
-
-#include <iostream>
-#include <thread>
-#include <future>
-#include <boost/log/trivial.hpp>
-#include <boost/test/minimal.hpp>
-
-using namespace std;
-
-int test_main(int argc, char* argv[]) {
-    try {
-        RuntimeConfig config;
-        config.ReadConfigFromFilesAndCmdLine(argc, argv);
-
-        auto pef = async(launch::async, PlayEngine::start, config);
-        // auto cef = async(launch::async, RemoteEngine::start, config); 
-        BOOST_LOG_TRIVIAL(debug) << "main thread waiting for play engine quit";
-        return pef.get(); // wait until the player receives the quit command
-    }
-    catch (exception &e) {
-        cerr << "error: " << e.what() << "\n";
-        return 1;
-    }
-    catch (...){
-        cerr << "Exception of unknown type!\n";
-    }
-    return 0;
+BOOST_AUTO_TEST_CASE( server_accept_connection ) {
+    BOOST_CHECK( true );
 }
+

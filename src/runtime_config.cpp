@@ -30,6 +30,14 @@ namespace po = boost::program_options;
 #include <fstream>
 #include <iterator>
 
+#define DEFAULT_LISTEN_PORT 7700
+#define DEFAULT_LISTEN_ADDR "127.0.0.1"
+#define DEFAULT_VLC_START_DELAY 10
+
+int RuntimeConfig::vlc_start_delay_ = DEFAULT_VLC_START_DELAY;
+int RuntimeConfig::listen_port_ = DEFAULT_LISTEN_PORT;
+string RuntimeConfig::listen_address_ = DEFAULT_LISTEN_ADDR;
+
 bool try_read_config_file(string config_file, 
         const po::options_description &opts_config,
         po::variables_map &vm) { 
@@ -60,15 +68,13 @@ bool RuntimeConfig::ReadConfigFromFilesAndCmdLine(int argc, char *argv[]) {
     // these are typically specified into the configuration file
     int vlc_start_delay;
     string streams_file;
-    int listen_port;
-    string listen_address;
     po::options_description opts_config("Configuration");
     opts_config.add_options()
         ("streams-file,s", po::value<string>(&streams_file)->default_value("streams.json"), "Path to the json file containing streams definition")
-        ("vlc-start-delay", po::value<int>(&vlc_start_delay)->default_value(10), 
+        ("vlc-start-delay", po::value<int>(&vlc_start_delay)->default_value(DEFAULT_VLC_START_DELAY), 
          "Delay before VLC startup, used to allow some stream data to arrive before starting it")
-        ("port", po::value<int>(&listen_port)->default_value(7700), "VPD will wait the commands on this port")
-        ("bind_to_address", po::value<string>(&listen_address)->default_value("127.0.0.1", "VPD will bind the commands listening port to this address"))
+        ("port", po::value<int>(&listen_port_)->default_value(DEFAULT_LISTEN_PORT), "VPD will wait the commands on this port")
+        ("bind_to_address", po::value<string>(&listen_address_)->default_value(DEFAULT_LISTEN_ADDR, "VPD will bind the commands listening port to this address"))
     ;
 
     po::options_description cmd_line_options;

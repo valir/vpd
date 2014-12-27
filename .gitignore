@@ -1,0 +1,6 @@
+build/*
+.kdev4
+*.swp
+tags
+.ycm_extra_conf*
+*~

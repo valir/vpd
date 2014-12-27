@@ -26,9 +26,9 @@
 using namespace std;
 
 struct RuntimeConfig {
-    int vlc_start_delay_;
-    string listen_port_;
-    string listen_address_;
+    static int vlc_start_delay_;
+    static int listen_port_;
+    static string listen_address_;
    
     static bool ReadConfigFromFilesAndCmdLine(int argc, char* argv[]);
 };

@@ -65,19 +65,31 @@ void accept_remote_connection();
 int playSopcast();
 
 io::io_service ioservice;
-io::signal_set signals(ioservice);
 io::ip::tcp::acceptor acceptor(ioservice);
 io::ip::tcp::socket remoteSocket(ioservice);
 
 int start (const RuntimeConfig &config) {
     BOOST_LOG_TRIVIAL(debug) << "PlayEngine: starting up...";
 
+    io::signal_set signals(ioservice);
+    
     signals.add(SIGINT);
     signals.add(SIGTERM);
     signals.add(SIGQUIT);
+    signals.async_wait(
+        [](const boost::system::error_code &ec, int signum) {
+            if (ec) {
+                BOOST_LOG_TRIVIAL(error) << "error ecountered when waiting for signals. code: " << ec.message();
+            } else {
+                BOOST_LOG_TRIVIAL(info) << "received signal " << signum << ". Quitting...";
+                ioservice.stop();
+            }
+        });
 
+    BOOST_LOG_TRIVIAL(info) << "listening on " << config.listen_address_ << ":" << config.listen_port_;
     io::ip::tcp::resolver resolver(ioservice);
-    io::ip::tcp::endpoint endpoint = *resolver.resolve({config.listen_address_, config.listen_port_});
+    io::ip::tcp::resolver::query query(config.listen_address_, std::to_string( config.listen_port_));
+    io::ip::tcp::endpoint endpoint = *resolver.resolve(query);
     acceptor.open(endpoint.protocol());
     acceptor.set_option(io::ip::tcp::acceptor::reuse_address(true));
     acceptor.bind(endpoint);
@@ -87,7 +99,8 @@ int start (const RuntimeConfig &config) {
 
     for (;;) {
         try {
-            io::io_service::work work(ioservice);
+            ioservice.run();
+            BOOST_LOG_TRIVIAL(info) << "stopping";
             break;
         }
         catch (...) {
