@@ -1,24 +1,25 @@
 /*
  * This file is part of the Video Player Daemon
- * 
+ *
  * Copyright (C) 2014 Valentin Rusu kde@rusu.info
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
  * License as published by the Free Software Foundation; either
  * version 2 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Library General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Library General Public License
  * along with this library; see the file COPYING.LIB.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  */
 #define BOOST_TEST_MODULE ClientConnection
+
 #include "client_connection.h"
 
 #include <sys/types.h>
@@ -91,13 +92,13 @@ struct AsioSetup {
         BOOST_TEST_MESSAGE("setup test fixture");
         io::ip::tcp::resolver resolver(io_service_);
         epi_ = resolver.resolve({"127.0.0.1", "7700"});
-       
+
         int existing_vpd_id = getProcIdByName("vpd");
         if (-1 == existing_vpd_id) {
             std::thread vpd = std::thread(
                     [this]() {
                         BOOST_TEST_MESSAGE("launching VPD...");
-                        auto execPath = "../vpd"; 
+                        auto execPath = "../vpd";
                         // auto execArgs = {
                         // };
                         //vlc.ctx_.process_name = "cvlc";
@@ -105,9 +106,9 @@ struct AsioSetup {
                         bp::child vpd = bp::create_child(execPath);
                         vpd_pid_ = vpd.get_id();
                         bp::status vpdstatus(io_service_);
-                        vpdstatus.async_wait(vpd.get_id(), 
+                        vpdstatus.async_wait(vpd.get_id(),
                             [](const boost::system::error_code &ec, int exit_code){
-                               BOOST_TEST_MESSAGE("VPD exit_code:" << exit_code); 
+                               BOOST_TEST_MESSAGE("VPD exit_code:" << exit_code);
                             });
                         BOOST_TEST_MESSAGE("VPD thread exit");
                     });
@@ -122,7 +123,7 @@ struct AsioSetup {
         // asio_thread_ = std::thread(
         //         [this]() {
         //             BOOST_TEST_MESSAGE("Starting asio thread");
-        //             io::io_service::work work(io_service_); 
+        //             io::io_service::work work(io_service_);
         //             BOOST_TEST_MESSAGE("asio thread stop");
         //         });
     }

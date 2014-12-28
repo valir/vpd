@@ -1,18 +1,18 @@
 /*
  * This file is part of the Video Player Daemon
- * 
+ *
  * Copyright (C) 2014 Valentin Rusu kde@rusu.info
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
  * License as published by the Free Software Foundation; either
  * version 2 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Library General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Library General Public License
  * along with this library; see the file COPYING.LIB.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
@@ -44,7 +44,7 @@ struct Connection : public msm::front::state_machine_def<Connection> {
 
     typedef Connection c; // makes transition table cleaner
     // struct transition_table : mpl::vector<
-    //         //      Start           Event       Next        Action      Guard 
+    //         //      Start           Event       Next        Action      Guard
     //         //  +-----------+-----------+-----------+------------+---------+
     //     a_row <     StateHandshake,      invalid_client,     Disconnected,             >
     // > {};
@@ -56,7 +56,7 @@ struct ClientSession;
 
 struct ClientDialog : public msm::front::state_machine_def<ClientDialog> {
     ClientDialog(ClientSession &session) : session_(session) {}
-    
+
     struct EventConnectionError {
         EventConnectionError(boost::system::error_code ec) : ec_(ec) {}
         boost::system::error_code ec_;
@@ -80,7 +80,7 @@ struct ClientDialog : public msm::front::state_machine_def<ClientDialog> {
                                     fsm.process_event(EventCommandReceived(""));
                                 } else {
                                     fsm.process_event(EventConnectionError(ec));
-                                } 
+                                }
                             });
                     } else {
                         fsm.process_event(EventConnectionError(ec));
@@ -99,7 +99,6 @@ struct ClientDialog : public msm::front::state_machine_def<ClientDialog> {
     typedef StateWaitCommand initial_state;
 
     // transition actions
-    
 
     // transitions table
     typedef ClientDialog cd;
@@ -114,7 +113,7 @@ private:
 struct ClientSession {
     ClientSession(io::ip::tcp::socket socket) : socket_(std::move(socket)) {}
     void start() {
-        msm::back::state_machine<ClientDialog> clientDialog(boost::ref(*this)); 
+        msm::back::state_machine<ClientDialog> clientDialog(boost::ref(*this));
         clientDialog.start();
     }
     io::ip::tcp::socket socket_;

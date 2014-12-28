@@ -1,18 +1,18 @@
 /*
  * This file is part of the VPD project
- * 
+ *
  * Copyright (C) 2014 Valentin Rusu kde@rusu.info
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
  * License as published by the Free Software Foundation; either
  * version 2 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Library General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Library General Public License
  * along with this library; see the file COPYING.LIB.  If not, write to
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
@@ -44,7 +44,7 @@ struct StdOutNullDevice
     void operator()(const boost::system::error_code &ec, std::size_t bytes) {
         if (!ec)
         {
-            // simply eat those verbose output 
+            // simply eat those verbose output
             p_.async_read_some(io::buffer(iobuffer_), *this);
         } else {
             BOOST_LOG_TRIVIAL(error) << "Error signaled in the StdOutNullDevice: " << ec.message();
@@ -72,7 +72,7 @@ int start (const RuntimeConfig &config) {
     BOOST_LOG_TRIVIAL(debug) << "PlayEngine: starting up...";
 
     io::signal_set signals(ioservice);
-    
+
     signals.add(SIGINT);
     signals.add(SIGTERM);
     signals.add(SIGQUIT);
@@ -112,7 +112,7 @@ int start (const RuntimeConfig &config) {
 }
 
 void accept_remote_connection() {
-    acceptor.async_accept(remoteSocket, 
+    acceptor.async_accept(remoteSocket,
         [](const boost::system::error_code &ec) {
             if (!acceptor.is_open()) {
                 return;
@@ -146,11 +146,11 @@ int playSopcast() {
     BOOST_LOG_TRIVIAL(debug) << "found " << vlc.execPath_;
     vlc.execArgs_ = {
         // TODO add an ifdef here to insert these two arguments on the RPI platform
-        //        "--vout", "omxil_vout", 
+        //        "--vout", "omxil_vout",
         "http://localhost:12345/tv.asf"
     };
     vlc.ctx_.process_name = "cvlc";
-//    vlc.ctx_.streams[bp::stdin_id] = bp::behavior::pipe(); 
+//    vlc.ctx_.streams[bp::stdin_id] = bp::behavior::pipe();
 
     bp::child sopcast_child = bp::create_child(sopcast.execPath_, sopcast.execArgs_, sopcast.ctx_);
     BOOST_LOG_TRIVIAL(debug) << "sopcast receiver started. standby for clvlc launch...";
