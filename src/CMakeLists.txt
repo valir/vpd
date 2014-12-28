@@ -18,9 +18,7 @@ set(VPD_SRCS
     remote_engine.cpp
     )
 add_executable(vpd ${VPD_SRCS})
-target_link_libraries(vpd 
+target_link_libraries(vpd
     ${Boost_LIBRARIES} ${Boost_LIBRARIES}
     pthread)
-
-add_subdirectory(test)
 

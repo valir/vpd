@@ -1,6 +1,7 @@
 find_package(Boost REQUIRED log filesystem system unit_test_framework thread)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR}/../)
+include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/lib)
 
 add_executable(test_client_connection client_connection.cpp)
 target_link_libraries(test_client_connection
