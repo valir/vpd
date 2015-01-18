@@ -45,5 +45,87 @@ std::string AckStatus::toString(EH&& explainHandler) const {
         << "\r\n";
     return sb.str();
 }
+
+
+struct ClientCommand
+{
+    ClientCommand(ClientMessagePtr& clientMsg) : clientMsg_(clientMsg) {}
+private:
+    ClientMessagePtr &clientMsg_;
+    std::string opcode_;
+};
+
+using ClientCommandPtr = std::shared_ptr<ClientCommand>;
+
+struct CloseCommand : public ClientCommand
+{
+    CloseCommand(ClientMessagePtr msg) : ClientCommand(msg) {}
+};
+
+
+auto closeFactory = [](ClientMessagePtr msg){ return std::make_shared<CloseCommand>(msg); };
+
+typedef decltype(closeFactory) Factory_t; // this typef picks one of the factories declarations, but NOTE all of the factories declarations must have the same type
+
+std::map< std::string, Factory_t> knownFactories = {
+    {  "close", closeFactory  }
+};
+
+void executeCommand(ClientCommandPtr clientCmd) {
+    // TODO
+}
+ClientCommandPtr clientCommandFactory(ClientMessagePtr &clientMsg) {
+    ClientCommandPtr command;
+    std::istream is(&clientMsg->commandBuffer());
+    std::string opcode;
+    is >> opcode;
+    auto factory = knownFactories.find(opcode);
+    if (factory != knownFactories.end()) {
+        BOOST_LOG_TRIVIAL(debug) << "factory found for " << opcode << " command";
+        command = (*factory).second(clientMsg);
+    }
+    return command;
+}
+
+void ClientSession::readNextCommand() {
+    auto thisPtr(shared_from_this());
+    auto nextCommand = std::make_shared<ClientMessage>();
+    io::async_read_until(socket_,
+            nextCommand->commandBuffer(), std::string("\r\n"),
+            [this, thisPtr, nextCommand](boost::system::error_code ec, std::size_t cmdlen) {
+                if (!ec)
+                {
+                    handleCommand(nextCommand);
+                }
+                else
+                {
+                    // FIXME handle the case where the error code io::error::not_found is sent
+                    // that means that the client didn't sent the required \r\n
+                    handleSocketError(ec);
+                }
+            });
+}
+void ClientSession::handleCommand(ClientMessagePtr msg) {
+    BOOST_LOG_TRIVIAL(debug) << "SESS " << sessionNumber_ << " CMD";
+    auto clientCmd = clientCommandFactory(msg);
+    if (clientCmd) {
+        executeCommand(clientCmd);
+    }
+    clientMessageHandled(msg);
+}
+
+
+
+void ClientSession::clientMessageHandled(ClientMessagePtr msg) {
+    auto thisPtr(shared_from_this());
+    io::async_write(socket_, msg->responseBuffer(),
+        [this, thisPtr](boost::system::error_code ec, std::size_t){
+            if (!ec) {
+                readNextCommand();
+            } else {
+                handleSocketError(ec);
+            }
+        });
+}
 } // ClientEngine
 

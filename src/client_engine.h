@@ -44,7 +44,6 @@ struct ClientMessage
         std::strncpy(response_, response.c_str(), max_response_length -1);
     }
     io::streambuf & commandBuffer() {
-        commandBuffer_.consume(commandBuffer_.size());
         return commandBuffer_;
     }
     auto responseBuffer() {
@@ -86,26 +85,6 @@ private:
 #define VPDN(n) #n
 #define VPDNN(n) VPDN(n)
 #define VPD_WELCOME_LINE "VPD " VPDNN(VPD_MAJOR_VERSION) "." VPDNN(VPD_MINOR_VERSION) " ready\r\n"
-struct ClientCommand
-{
-    ClientCommand(ClientMessagePtr& clientMsg) : clientMsg_(clientMsg) {}
-    bool isValid() {
-        std::istream is(&clientMsg_->commandBuffer());
-        is >> opcode_;
-        if (!checkOpcode()) {
-            clientMsg_->setResponse(AckStatus::fromError(opcode_, Error::UnknownCommand).toString());
-        }
-        return true;
-    }
-    bool checkOpcode() {
-        return false;
-    }
-private:
-    ClientMessagePtr &clientMsg_;
-    std::string opcode_;
-};
-
-using ClientCommandPtr = std::shared_ptr<ClientCommand>;
 
 using socket_t = io::ip::tcp::socket;
 
@@ -123,49 +102,10 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
         clientMessageHandled(welcomeMsg);
     }
 
-    void readNextCommand() {
-        auto thisPtr(shared_from_this());
-        auto nextCommand = std::make_shared<ClientMessage>();
-        io::async_read_until(socket_,
-                nextCommand->commandBuffer(), std::string("\r\n"),
-                [this, thisPtr, nextCommand](boost::system::error_code ec, std::size_t cmdlen) {
-                    if (!ec)
-                    {
-                        handleCommand(nextCommand);
-                    }
-                    else
-                    {
-                        // FIXME handle the case where the error code io::error::not_found is sent
-                        // that means that the client didn't sent the required \r\n
-                        handleSocketError(ec);
-                    }
-                });
-    }
+    void readNextCommand();
+    void handleCommand(ClientMessagePtr msg);
 
-    void handleCommand(ClientMessagePtr msg) {
-        BOOST_LOG_TRIVIAL(debug) << "SESS " << sessionNumber_ << " CMD";
-        auto clientCmd = std::make_shared<ClientCommand>(msg);
-        if (clientCmd->isValid()) {
-            executeCommand(clientCmd);
-        }
-        clientMessageHandled(msg);
-    }
-
-    void executeCommand(ClientCommandPtr clientCmd) {
-    }
-
-    void clientMessageHandled(ClientMessagePtr msg) {
-        auto thisPtr(shared_from_this());
-        io::async_write(socket_, msg->responseBuffer(),
-            [this, thisPtr](boost::system::error_code ec, std::size_t){
-                if (!ec) {
-                    readNextCommand();
-                } else {
-                    handleSocketError(ec);
-                }
-            });
-    }
-
+    void clientMessageHandled(ClientMessagePtr msg);
     void handleSocketError(boost::system::error_code ec) {
         BOOST_LOG_TRIVIAL(debug) << "socket error " << ec.message();
         closeSession();
