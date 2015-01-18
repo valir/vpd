@@ -1,6 +1,6 @@
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lib)
 
 add_definitions(-DBOOST_LOG_DYN_LINK) # fix boost log link errors
@@ -13,9 +13,8 @@ configure_file (
 set(VPD_SRCS
     main.cpp
     runtime_config.cpp
-    client_connection.cpp
+    client_engine.cpp
     play_engine.cpp
-    remote_engine.cpp
     )
 add_executable(vpd ${VPD_SRCS})
 target_link_libraries(vpd

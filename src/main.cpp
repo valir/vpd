@@ -21,7 +21,6 @@
 
 #include "runtime_config.h"
 #include "play_engine.h"
-#include "remote_engine.h"
 
 #include <iostream>
 #include <thread>
@@ -36,10 +35,8 @@ int test_main(int argc, char* argv[]) {
         RuntimeConfig config;
         config.ReadConfigFromFilesAndCmdLine(argc, argv);
 
-        auto pef = async(launch::async, PlayEngine::start, config);
-        // auto cef = async(launch::async, RemoteEngine::start, config);
-        BOOST_LOG_TRIVIAL(debug) << "main thread waiting for play engine quit";
-        return pef.get(); // wait until the player receives the quit command
+        auto pef = std::async(launch::async, PlayEngine::start, config);
+        return pef.get();
     }
     catch (exception &e) {
         cerr << "error: " << e.what() << "\n";

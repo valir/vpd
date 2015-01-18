@@ -1,5 +1,5 @@
 /*
- * This file is part of the VPD project
+ * This file is part of the Video Player Daemon
  *
  * Copyright (C) 2014 Valentin Rusu kde@rusu.info
  *
@@ -18,23 +18,32 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  */
+#include "client_engine.h"
+#include "config.h"
 
-#ifndef  CLIENT_CONNECTION_INC
-#define  CLIENT_CONNECTION_INC
-
-#include "runtime_config.h"
-#include <string>
+#include <boost/log/trivial.hpp>
+#include <thread>
+#include <chrono>
+#include <iostream>
 #include <boost/asio.hpp>
-#include <memory>
 
-using namespace std;
-namespace io = boost::asio;
+namespace ClientEngine {
 
-namespace ClientConnection
-{
 
-void start(io::ip::tcp::socket);
+int ClientSession::nextSessionNumber = 0;
 
-} // namespace ClientConnection
+const char* errorMessages_[static_cast<std::size_t>(Error::LastError)] = {
+    "No error",
+    "unknown command",
+};
 
-#endif // CLIENT_CONNECTION_INC
+std::string AckStatus::toString(EH&& explainHandler) const {
+    std::stringbuf sb;
+    std::ostream os(&sb);
+    os << "ACK [" << static_cast<std::size_t>(error_) << "@" << cmdNumber_ << "] {"
+        << currentCmd_ << "} " << explainHandler(errorMessages_[static_cast<std::size_t>(error_)])
+        << "\r\n";
+    return sb.str();
+}
+} // ClientEngine
+

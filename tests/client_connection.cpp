@@ -20,7 +20,7 @@
  */
 #define BOOST_TEST_MODULE ClientConnection
 
-#include "client_connection.h"
+#include "config.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -150,6 +150,32 @@ BOOST_AUTO_TEST_CASE( server_accept_connection ) {
     socket.connect(*epi_, ec);
     BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
     BOOST_CHECK(!ec);
+    socket.close();
+}
+
+#define VPDN(n) #n
+#define VPDNN(n) VPDN(n)
+#define VPD_WELCOME_LINE "VPD " VPDNN(VPD_MAJOR_VERSION) "." VPDNN(VPD_MINOR_VERSION) " ready\r"
+
+BOOST_AUTO_TEST_CASE( server_responds_hello ) {
+    BOOST_TEST_MESSAGE("Testing servers responds hello");
+    io::ip::tcp::socket socket(io_service_);
+    boost::system::error_code ec;
+    socket.connect(*epi_, ec);
+    BOOST_CHECK(!ec);
+    ec.clear();
+    io::streambuf data;
+    auto bytes = io::read_until(socket, data, "\r\n", ec);
+    BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
+    BOOST_REQUIRE(!ec);
+    std::istream datais(&data);
+    char response[bytes+1];
+    std::memset(response, 0, bytes+1);
+    datais.getline(response, bytes);
+    BOOST_MESSAGE("server greeting is: " << static_cast<char*>(response));
+    BOOST_MESSAGE("expected greeting is: " VPD_WELCOME_LINE);
+    BOOST_REQUIRE(strncmp(response, VPD_WELCOME_LINE, bytes) == 0);
+
     socket.close();
 }
 

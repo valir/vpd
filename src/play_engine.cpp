@@ -19,7 +19,8 @@
  * Boston, MA 02110-1301, USA.
  */
 #include "play_engine.h"
-#include "client_connection.h"
+#include "config.h"
+#include "client_engine.h"
 
 #include <thread>
 #include <future>
@@ -32,9 +33,9 @@
 
 namespace PlayEngine {
 
-using namespace ClientConnection;
 namespace bp = boost::process;
 namespace io = boost::asio;
+using socket_t = io::ip::tcp::socket;
 
 struct StdOutNullDevice
 {
@@ -61,17 +62,16 @@ struct PlayerExecInfo
     bp::context ctx_;
 };
 
-void accept_remote_connection();
-int playSopcast();
+io::io_service ioservice_;
+io::ip::tcp::acceptor acceptor(ioservice_);
 
-io::io_service ioservice;
-io::ip::tcp::acceptor acceptor(ioservice);
-io::ip::tcp::socket remoteSocket(ioservice);
+class Player {
+public:
+    Player() {}
+};
 
-int start (const RuntimeConfig &config) {
-    BOOST_LOG_TRIVIAL(debug) << "PlayEngine: starting up...";
-
-    io::signal_set signals(ioservice);
+void handle_signals() {
+    io::signal_set signals(ioservice_);
 
     signals.add(SIGINT);
     signals.add(SIGTERM);
@@ -82,24 +82,60 @@ int start (const RuntimeConfig &config) {
                 BOOST_LOG_TRIVIAL(error) << "error ecountered when waiting for signals. code: " << ec.message();
             } else {
                 BOOST_LOG_TRIVIAL(info) << "received signal " << signum << ". Quitting...";
-                ioservice.stop();
+                ioservice_.stop();
             }
         });
+}
 
+
+
+using ClientSessionPtr = std::shared_ptr<ClientEngine::ClientSession>;
+std::list< ClientSessionPtr > clientSessions_;
+
+void prepare_accept_remote_connection(const RuntimeConfig &config) {
     BOOST_LOG_TRIVIAL(info) << "listening on " << config.listen_address_ << ":" << config.listen_port_;
-    io::ip::tcp::resolver resolver(ioservice);
+    io::ip::tcp::resolver resolver(ioservice_);
     io::ip::tcp::resolver::query query(config.listen_address_, std::to_string( config.listen_port_));
     io::ip::tcp::endpoint endpoint = *resolver.resolve(query);
     acceptor.open(endpoint.protocol());
     acceptor.set_option(io::ip::tcp::acceptor::reuse_address(true));
     acceptor.bind(endpoint);
     acceptor.listen();
+}
 
-    accept_remote_connection();
+void accept_remote_connection(const RuntimeConfig &config) {
+    io::ip::tcp::socket remoteSocket(ioservice_);
+    auto session = std::make_shared<ClientEngine::ClientSession>(std::move(remoteSocket));
+    acceptor.async_accept(session->socket(),
+        [config, session](const boost::system::error_code &ec) {
+            if (!acceptor.is_open()) {
+                return;
+            }
 
+            if (!ec) {
+                clientSessions_.emplace_back(session);
+                session->start();
+            }
+            accept_remote_connection(config);
+        });
+}
+
+void sessionClosed(ClientSessionPtr sessionPtr) {
+    clientSessions_.remove(sessionPtr);
+}
+
+int start (const RuntimeConfig &config) {
+    BOOST_LOG_TRIVIAL(debug) << "PlayEngine: starting up...";
+
+    handle_signals();
+
+    prepare_accept_remote_connection(config);
+    accept_remote_connection(config);
+
+    // main program loop, handling async IO
     for (;;) {
         try {
-            ioservice.run();
+            ioservice_.run();
             BOOST_LOG_TRIVIAL(info) << "stopping";
             break;
         }
@@ -111,21 +147,9 @@ int start (const RuntimeConfig &config) {
     return 0;
 }
 
-void accept_remote_connection() {
-    acceptor.async_accept(remoteSocket,
-        [](const boost::system::error_code &ec) {
-            if (!acceptor.is_open()) {
-                return;
-            }
-
-            if (!ec) {
-                ClientConnection::start(std::move(remoteSocket));
-            }
-            accept_remote_connection();
-        });
-}
 
 int playSopcast() {
+    using namespace std::literals;
     PlayerExecInfo sopcast;
     // TODO this should be configurable as it platform dependant
     sopcast.execPath_ = bp::find_executable_in_path("sp-sc-auth");
@@ -154,15 +178,15 @@ int playSopcast() {
 
     bp::child sopcast_child = bp::create_child(sopcast.execPath_, sopcast.execArgs_, sopcast.ctx_);
     BOOST_LOG_TRIVIAL(debug) << "sopcast receiver started. standby for clvlc launch...";
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    std::this_thread::sleep_for(5s);
     bp::child vlc_child = bp::create_child(vlc.execPath_, vlc.execArgs_, vlc.ctx_);
     BOOST_LOG_TRIVIAL(debug) << "cvlc launched. playback should start shortly...";
 
     bp::handle read_h = sopcast_child.get_handle(bp::stdout_id);
-    bp::pipe sop_stdout(ioservice, read_h.release());
+    bp::pipe sop_stdout(ioservice_, read_h.release());
     //
     // // bp::handle write_h = vlc_child.get_handle(bp::stdin_id);
-    // // bp::pipe video_buffer_out(ioservice, write_h.release());
+    // // bp::pipe video_buffer_out(ioservice_, write_h.release());
     //
     // bp::postream vlc_stdin(vlc_child.get_handle(bp::stdin_id));
     StdOutNullDevice dropSopcastStdout(sop_stdout);
