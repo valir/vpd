@@ -47,33 +47,39 @@ std::string AckStatus::toString(EH&& explainHandler) const {
 }
 
 
-struct ClientCommand
+struct ClientCommand : public std::enable_shared_from_this<ClientCommand>
 {
-    ClientCommand(ClientMessagePtr& clientMsg) : clientMsg_(clientMsg) {}
-private:
+    using ClientCommandPtr = std::shared_ptr<ClientCommand>;
+    using CommandFunc_t = std::function<void(ClientCommandPtr)>;
+    ClientCommand(ClientMessagePtr& clientMsg, CommandFunc_t action) : clientMsg_(clientMsg) {}
+    void execute(ClientSessionPtr session);
+protected:
+    virtual void collectParameters();
     ClientMessagePtr &clientMsg_;
     std::string opcode_;
 };
 
 using ClientCommandPtr = std::shared_ptr<ClientCommand>;
 
-struct CloseCommand : public ClientCommand
-{
-    CloseCommand(ClientMessagePtr msg) : ClientCommand(msg) {}
+auto closeFactory = [](ClientMessagePtr msg){
+    return std::make_shared<ClientCommand>(msg,
+                [](ClientCommandPtr) { } );
+    };
+
+auto statusFactory = [](ClientMessagePtr msg){
+    return std::make_shared<ClientCommand>(msg,
+                [](ClientCommandPtr) { } );
+    };
+
+using Factory_t = std::function<ClientCommandPtr(ClientMessagePtr)>;
+std::map< std::string, Factory_t > knownFactories;
+
+/** brace initialization won't work for the knownFactories map, so use this classical init function */
+void initKnownFactories() {
+    knownFactories.emplace( "status", statusFactory );
+    knownFactories.emplace( "close" , closeFactory );
 };
 
-
-auto closeFactory = [](ClientMessagePtr msg){ return std::make_shared<CloseCommand>(msg); };
-
-typedef decltype(closeFactory) Factory_t; // this typef picks one of the factories declarations, but NOTE all of the factories declarations must have the same type
-
-std::map< std::string, Factory_t> knownFactories = {
-    {  "close", closeFactory  }
-};
-
-void executeCommand(ClientCommandPtr clientCmd) {
-    // TODO
-}
 ClientCommandPtr clientCommandFactory(ClientMessagePtr &clientMsg) {
     ClientCommandPtr command;
     std::istream is(&clientMsg->commandBuffer());
@@ -87,8 +93,14 @@ ClientCommandPtr clientCommandFactory(ClientMessagePtr &clientMsg) {
     return command;
 }
 
+ClientSession::ClientSession(socket_t&& socket) :
+    socket_(std::move(socket))
+    , sessionNumber_(++nextSessionNumber)
+    {
+    }
+
 void ClientSession::readNextCommand() {
-    auto thisPtr(shared_from_this());
+    auto thisPtr = shared_from_this();
     auto nextCommand = std::make_shared<ClientMessage>();
     io::async_read_until(socket_,
             nextCommand->commandBuffer(), std::string("\r\n"),
@@ -105,11 +117,12 @@ void ClientSession::readNextCommand() {
                 }
             });
 }
+
 void ClientSession::handleCommand(ClientMessagePtr msg) {
     BOOST_LOG_TRIVIAL(debug) << "SESS " << sessionNumber_ << " CMD";
     auto clientCmd = clientCommandFactory(msg);
     if (clientCmd) {
-        executeCommand(clientCmd);
+        clientCmd->execute(shared_from_this());
     }
     clientMessageHandled(msg);
 }

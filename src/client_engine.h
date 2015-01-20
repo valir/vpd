@@ -90,11 +90,7 @@ using socket_t = io::ip::tcp::socket;
 
 struct ClientSession : public std::enable_shared_from_this<ClientSession>
 {
-    explicit ClientSession(socket_t&& socket) :
-        socket_(std::move(socket))
-        , sessionNumber_(++nextSessionNumber) {
-    }
-
+    explicit ClientSession(socket_t&& socket);
     void start() {
         BOOST_LOG_TRIVIAL(info) << "Starting client session " << sessionNumber_;
         auto welcomeMsg = std::make_shared<ClientMessage>();
@@ -121,6 +117,8 @@ private:
     const int sessionNumber_;
     socket_t socket_;
 };
+
+using ClientSessionPtr = std::shared_ptr<ClientSession>;
 
 } // namespace ClientEngine
 
