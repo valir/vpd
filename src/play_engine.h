@@ -23,25 +23,12 @@
 #define  PLAY_ENGINE_INC
 
 #include "runtime_config.h"
+#include "client_engine.h"
 
 namespace PlayEngine {
 
-template <typename Request, typename Reply>
-struct EngineMessage
-{
-    enum EngineCommand {
-        PLAYER_STATUS,
-        PLAYER_START,
-        PLAYER_STOP,
-        PLAYER_PAUSE
-    };
-
-    EngineCommand engineCommand_;
-    Request request_;
-    Reply reply_;
-};
-
 int start(const RuntimeConfig &config);
+void sessionClosed(ClientEngine::ClientSessionPtr sessionPtr);
 
 } // namespace PlayEngine
 

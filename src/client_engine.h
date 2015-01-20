@@ -82,22 +82,13 @@ private:
 
 };
 
-#define VPDN(n) #n
-#define VPDNN(n) VPDN(n)
-#define VPD_WELCOME_LINE "VPD " VPDNN(VPD_MAJOR_VERSION) "." VPDNN(VPD_MINOR_VERSION) " ready\r\n"
-
 using socket_t = io::ip::tcp::socket;
 
 struct ClientSession : public std::enable_shared_from_this<ClientSession>
 {
     explicit ClientSession(socket_t&& socket);
-    void start() {
-        BOOST_LOG_TRIVIAL(info) << "Starting client session " << sessionNumber_;
-        auto welcomeMsg = std::make_shared<ClientMessage>();
-        welcomeMsg->setResponse(VPD_WELCOME_LINE);
-        clientMessageHandled(welcomeMsg);
-    }
-
+    ~ClientSession();
+    void start();
     void readNextCommand();
     void handleCommand(ClientMessagePtr msg);
 
@@ -107,10 +98,7 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
         closeSession();
     }
 
-    void closeSession() {
-        socket_.close();
-    }
-
+    void closeSession();
     socket_t & socket() { return socket_; }
 private:
     static int nextSessionNumber;

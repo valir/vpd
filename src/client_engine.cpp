@@ -20,6 +20,7 @@
  */
 #include "client_engine.h"
 #include "config.h"
+#include "play_engine.h"
 
 #include <boost/log/trivial.hpp>
 #include <thread>
@@ -46,41 +47,58 @@ std::string AckStatus::toString(EH&& explainHandler) const {
     return sb.str();
 }
 
-
 struct ClientCommand : public std::enable_shared_from_this<ClientCommand>
 {
+    struct CommandParams { /* no params */  };
+    using CommandParamsPtr = std::shared_ptr<CommandParams>;
     using ClientCommandPtr = std::shared_ptr<ClientCommand>;
-    using CommandFunc_t = std::function<void(ClientCommandPtr)>;
-    ClientCommand(ClientMessagePtr& clientMsg, CommandFunc_t action) : clientMsg_(clientMsg) {}
-    void execute(ClientSessionPtr session);
-protected:
-    virtual void collectParameters();
+    using CollectParamsFunc_t = std::function<CommandParamsPtr(ClientMessagePtr)>;
+    using CommandFunc_t = std::function<void(ClientCommandPtr, ClientSessionPtr)>;
+    ClientCommand(ClientMessagePtr& clientMsg, CollectParamsFunc_t collectParamsFun, CommandFunc_t action) :
+        clientMsg_(clientMsg)
+        , command_(action) {
+        }
+    void execute(ClientSessionPtr session) {
+        command_(shared_from_this(), session);
+    }
+    CommandParamsPtr params() const { return collectParamsFun_(clientMsg_); }
+private:
     ClientMessagePtr &clientMsg_;
+    CollectParamsFunc_t collectParamsFun_;
+    CommandFunc_t command_;
     std::string opcode_;
 };
 
 using ClientCommandPtr = std::shared_ptr<ClientCommand>;
 
+auto noParamsFun = [](ClientMessagePtr) { return std::make_shared<ClientCommand::CommandParams>(); };
+
 auto closeFactory = [](ClientMessagePtr msg){
     return std::make_shared<ClientCommand>(msg,
-                [](ClientCommandPtr) { } );
+                noParamsFun,
+                [](ClientCommandPtr, ClientSessionPtr session) {
+                    session->closeSession();
+                } );
     };
 
 auto statusFactory = [](ClientMessagePtr msg){
     return std::make_shared<ClientCommand>(msg,
-                [](ClientCommandPtr) { } );
+                noParamsFun,
+                [](ClientCommandPtr, ClientSessionPtr) { } );
     };
 
 using Factory_t = std::function<ClientCommandPtr(ClientMessagePtr)>;
 std::map< std::string, Factory_t > knownFactories;
 
 /** brace initialization won't work for the knownFactories map, so use this classical init function */
-void initKnownFactories() {
+bool initKnownFactories() {
     knownFactories.emplace( "status", statusFactory );
     knownFactories.emplace( "close" , closeFactory );
+    return true;
 };
 
 ClientCommandPtr clientCommandFactory(ClientMessagePtr &clientMsg) {
+    static bool initFactories = initKnownFactories();
     ClientCommandPtr command;
     std::istream is(&clientMsg->commandBuffer());
     std::string opcode;
@@ -98,6 +116,21 @@ ClientSession::ClientSession(socket_t&& socket) :
     , sessionNumber_(++nextSessionNumber)
     {
     }
+
+ClientSession::~ClientSession() {
+    BOOST_LOG_TRIVIAL(debug) << "session " << sessionNumber_ << " destroy";
+}
+
+#define VPDN(n) #n
+#define VPDNN(n) VPDN(n)
+#define VPD_WELCOME_LINE "VPD " VPDNN(VPD_MAJOR_VERSION) "." VPDNN(VPD_MINOR_VERSION) " ready\r\n"
+
+void ClientSession::start() {
+    BOOST_LOG_TRIVIAL(info) << "Starting client session " << sessionNumber_;
+    auto welcomeMsg = std::make_shared<ClientMessage>();
+    welcomeMsg->setResponse(VPD_WELCOME_LINE);
+    clientMessageHandled(welcomeMsg);
+}
 
 void ClientSession::readNextCommand() {
     auto thisPtr = shared_from_this();
@@ -119,10 +152,12 @@ void ClientSession::readNextCommand() {
 }
 
 void ClientSession::handleCommand(ClientMessagePtr msg) {
-    BOOST_LOG_TRIVIAL(debug) << "SESS " << sessionNumber_ << " CMD";
     auto clientCmd = clientCommandFactory(msg);
     if (clientCmd) {
+        BOOST_LOG_TRIVIAL(debug) << "SESS " << sessionNumber_ << " CMD";
         clientCmd->execute(shared_from_this());
+    } else {
+        BOOST_LOG_TRIVIAL(debug) << "SESS " << sessionNumber_ << " UNKOWN CMD!";
     }
     clientMessageHandled(msg);
 }
@@ -140,5 +175,11 @@ void ClientSession::clientMessageHandled(ClientMessagePtr msg) {
             }
         });
 }
+
+void ClientSession::closeSession() {
+    socket_.close();
+    PlayEngine::sessionClosed(shared_from_this());
+}
+
 } // ClientEngine
 

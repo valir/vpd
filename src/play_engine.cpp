@@ -20,7 +20,6 @@
  */
 #include "play_engine.h"
 #include "config.h"
-#include "client_engine.h"
 
 #include <thread>
 #include <future>
