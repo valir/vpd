@@ -49,24 +49,28 @@ std::string AckStatus::toString(EH&& explainHandler) const {
 
 struct ClientCommand : public std::enable_shared_from_this<ClientCommand>
 {
-    struct CommandParams { /* no params */  };
+    using CommandParams = std::vector<std::string>;
     using CommandParamsPtr = std::shared_ptr<CommandParams>;
     using ClientCommandPtr = std::shared_ptr<ClientCommand>;
-    using CollectParamsFunc_t = std::function<CommandParamsPtr(ClientMessagePtr)>;
     using CommandFunc_t = std::function<void(ClientCommandPtr, ClientSessionPtr)>;
-    ClientCommand(ClientMessagePtr& clientMsg, CollectParamsFunc_t collectParamsFun, CommandFunc_t action) :
+    ClientCommand(ClientMessagePtr& clientMsg, CommandFunc_t action) :
         clientMsg_(clientMsg)
         , command_(action) {
         }
     void execute(ClientSessionPtr session) {
         command_(shared_from_this(), session);
     }
-    CommandParamsPtr params() const { return collectParamsFun_(clientMsg_); }
+    void extractParams(std::istream& is) {
+        std::string param;
+        while (is >> param) {
+            params_.push_back(param);
+        }
+    }
 private:
     ClientMessagePtr &clientMsg_;
-    CollectParamsFunc_t collectParamsFun_;
     CommandFunc_t command_;
     std::string opcode_;
+    CommandParams params_;
 };
 
 using ClientCommandPtr = std::shared_ptr<ClientCommand>;
@@ -75,7 +79,6 @@ auto noParamsFun = [](ClientMessagePtr) { return std::make_shared<ClientCommand:
 
 auto closeFactory = [](ClientMessagePtr msg){
     return std::make_shared<ClientCommand>(msg,
-                noParamsFun,
                 [](ClientCommandPtr, ClientSessionPtr session) {
                     session->closeSession();
                 } );
@@ -83,8 +86,14 @@ auto closeFactory = [](ClientMessagePtr msg){
 
 auto statusFactory = [](ClientMessagePtr msg){
     return std::make_shared<ClientCommand>(msg,
-                noParamsFun,
                 [](ClientCommandPtr, ClientSessionPtr) { } );
+    };
+
+auto playFactory = [](ClientMessagePtr msg){
+    return std::make_shared<ClientCommand>(msg,
+                [](ClientCommandPtr, ClientSessionPtr session) {
+                    session->play();
+                } );
     };
 
 using Factory_t = std::function<ClientCommandPtr(ClientMessagePtr)>;
@@ -94,10 +103,11 @@ std::map< std::string, Factory_t > knownFactories;
 bool initKnownFactories() {
     knownFactories.emplace( "status", statusFactory );
     knownFactories.emplace( "close" , closeFactory );
+    knownFactories.emplace( "play", playFactory );
     return true;
 };
 
-ClientCommandPtr clientCommandFactory(ClientMessagePtr &clientMsg) {
+ClientCommandPtr clientCommandFactory(ClientMessagePtr clientMsg) {
     static bool initFactories = initKnownFactories();
     ClientCommandPtr command;
     std::istream is(&clientMsg->commandBuffer());
@@ -107,6 +117,7 @@ ClientCommandPtr clientCommandFactory(ClientMessagePtr &clientMsg) {
     if (factory != knownFactories.end()) {
         BOOST_LOG_TRIVIAL(debug) << "factory found for " << opcode << " command";
         command = (*factory).second(clientMsg);
+        command->extractParams(is);
     }
     return command;
 }
@@ -134,13 +145,13 @@ void ClientSession::start() {
 
 void ClientSession::readNextCommand() {
     auto thisPtr = shared_from_this();
-    auto nextCommand = std::make_shared<ClientMessage>();
+    auto nextMsg = std::make_shared<ClientMessage>();
     io::async_read_until(socket_,
-            nextCommand->commandBuffer(), std::string("\r\n"),
-            [this, thisPtr, nextCommand](boost::system::error_code ec, std::size_t cmdlen) {
+            nextMsg->commandBuffer(), std::string("\r\n"),
+            [this, thisPtr, nextMsg](boost::system::error_code ec, std::size_t cmdlen) {
                 if (!ec)
                 {
-                    handleCommand(nextCommand);
+                    handleMessage(nextMsg);
                 }
                 else
                 {
@@ -151,7 +162,7 @@ void ClientSession::readNextCommand() {
             });
 }
 
-void ClientSession::handleCommand(ClientMessagePtr msg) {
+void ClientSession::handleMessage(ClientMessagePtr msg) {
     auto clientCmd = clientCommandFactory(msg);
     if (clientCmd) {
         BOOST_LOG_TRIVIAL(debug) << "SESS " << sessionNumber_ << " CMD";
@@ -161,8 +172,6 @@ void ClientSession::handleCommand(ClientMessagePtr msg) {
     }
     clientMessageHandled(msg);
 }
-
-
 
 void ClientSession::clientMessageHandled(ClientMessagePtr msg) {
     auto thisPtr(shared_from_this());
@@ -179,6 +188,9 @@ void ClientSession::clientMessageHandled(ClientMessagePtr msg) {
 void ClientSession::closeSession() {
     socket_.close();
     PlayEngine::sessionClosed(shared_from_this());
+}
+
+void ClientSession::play() {
 }
 
 } // ClientEngine

@@ -89,8 +89,14 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
     explicit ClientSession(socket_t&& socket);
     ~ClientSession();
     void start();
+    socket_t & socket() { return socket_; }
+
+    // follow the client commands
+    void closeSession();
+    void play();
+private:
     void readNextCommand();
-    void handleCommand(ClientMessagePtr msg);
+    void handleMessage(ClientMessagePtr msg);
 
     void clientMessageHandled(ClientMessagePtr msg);
     void handleSocketError(boost::system::error_code ec) {
@@ -98,9 +104,6 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
         closeSession();
     }
 
-    void closeSession();
-    socket_t & socket() { return socket_; }
-private:
     static int nextSessionNumber;
     const int sessionNumber_;
     socket_t socket_;

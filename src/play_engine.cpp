@@ -54,13 +54,6 @@ struct StdOutNullDevice
     boost::array<char, 65536> iobuffer_;
 };
 
-struct PlayerExecInfo
-{
-    string  execPath_;
-    std::vector<string> execArgs_;
-    bp::context ctx_;
-};
-
 io::io_service ioservice_;
 io::ip::tcp::acceptor acceptor(ioservice_);
 
@@ -123,6 +116,8 @@ void sessionClosed(ClientSessionPtr sessionPtr) {
     clientSessions_.remove(sessionPtr);
 }
 
+
+
 int start (const RuntimeConfig &config) {
     BOOST_LOG_TRIVIAL(debug) << "PlayEngine: starting up...";
 
@@ -146,50 +141,75 @@ int start (const RuntimeConfig &config) {
     return 0;
 }
 
-
-int playSopcast() {
-    using namespace std::literals;
-    PlayerExecInfo sopcast;
-    // TODO this should be configurable as it platform dependant
-    sopcast.execPath_ = bp::find_executable_in_path("sp-sc-auth");
-    if (sopcast.execPath_.length() == 0) {
-        BOOST_LOG_TRIVIAL(error) << "Cannot find sp-sc-auth executable!";
-        return 1;
+struct PlayerExec : public std::enable_shared_from_this<PlayerExec>
+{
+    using args_vector = std::vector<string>;
+    PlayerExec(std::string execName, args_vector&& args = args_vector()) :
+        execArgs_(args)
+    {
+        execPath_ = bp::find_executable_in_path(execName);
+        if (execPath_.length() == 0) {
+            BOOST_LOG_TRIVIAL(error) << "Cannot find " << execName << "executable!";
+            setInvalid();
+        } else {
+            BOOST_LOG_TRIVIAL(debug) << "found " << execPath_;
+            ctx_.process_name = execName;
+        }
     }
-    BOOST_LOG_TRIVIAL(debug) << "found " << sopcast.execPath_;
-    sopcast.execArgs_ = { "sop://broker.sopcast.com:3912/151929", "1234", "12345" }; // play protv
-    sopcast.ctx_.process_name = "sopcast";
-    // this will sink sp-sc-auth output, which is somewhat verbose
-    sopcast.ctx_.streams[bp::stdout_id] = bp::behavior::pipe();
+    void setInvalid() { valid_ = false; }
+    void start() {
+        child_ = std::make_shared<bp::child>(bp::create_child(execPath_, execArgs_, ctx_));
+        BOOST_LOG_TRIVIAL(debug) << ctx_.process_name << "process started. standby for clvlc launch...";
+    }
+private:
+    bool valid_;
+    string  execPath_;
+    std::vector<string> execArgs_;
+    bp::context ctx_;
+    using child_ptr = std::shared_ptr<bp::child>;
+    child_ptr child_;
+};
 
 
-    PlayerExecInfo vlc;
+int playSopcast(std::string uri) {
+    using namespace std::literals;
+    // TODO this should be configurable as it platform dependant
+    PlayerExec sopcast("sp-sc-auth", { "sop://broker.sopcast.com:3912/151929", "1234", "12345" });// play protv
+
+
     // TODO let the cvlc exec name be configurable
-    vlc.execPath_ = bp::find_executable_in_path("cvlc");
-    BOOST_LOG_TRIVIAL(debug) << "found " << vlc.execPath_;
-    vlc.execArgs_ = {
+    PlayerExec vlc("cvlc", {
         // TODO add an ifdef here to insert these two arguments on the RPI platform
         //        "--vout", "omxil_vout",
         "http://localhost:12345/tv.asf"
-    };
-    vlc.ctx_.process_name = "cvlc";
-//    vlc.ctx_.streams[bp::stdin_id] = bp::behavior::pipe();
+    });
 
-    bp::child sopcast_child = bp::create_child(sopcast.execPath_, sopcast.execArgs_, sopcast.ctx_);
-    BOOST_LOG_TRIVIAL(debug) << "sopcast receiver started. standby for clvlc launch...";
+    sopcast.start();
     std::this_thread::sleep_for(5s);
-    bp::child vlc_child = bp::create_child(vlc.execPath_, vlc.execArgs_, vlc.ctx_);
-    BOOST_LOG_TRIVIAL(debug) << "cvlc launched. playback should start shortly...";
+    vlc.start();
 
-    bp::handle read_h = sopcast_child.get_handle(bp::stdout_id);
-    bp::pipe sop_stdout(ioservice_, read_h.release());
-    //
-    // // bp::handle write_h = vlc_child.get_handle(bp::stdin_id);
-    // // bp::pipe video_buffer_out(ioservice_, write_h.release());
-    //
-    // bp::postream vlc_stdin(vlc_child.get_handle(bp::stdin_id));
-    StdOutNullDevice dropSopcastStdout(sop_stdout);
     return 0;
+}
+
+struct EngineStatus
+{
+    void addStatusMessage(std::string msg) {
+        messages_.push_back(msg);
+    }
+    std::vector<std::string> messages_;
+};
+void play(std::string uri) {
+    // NOTE should we use cpp-netlib for URI parsing ?
+    auto proto_end = uri.find_first_of(':');
+    if (proto_end == std::string::npos) {
+        return;
+    }
+    std::string proto = uri.substr(0, proto_end-1);
+    if (proto == "sop") {
+        playSopcast(uri);
+    } else {
+
+    }
 }
 
 } // namespace PlayEngine
