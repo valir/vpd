@@ -35,6 +35,37 @@ namespace io = boost::asio;
 namespace ClientEngine
 {
 
+enum class Error : std::size_t {
+    NoError =0,
+    UnknownCommand,
+    CommandNotImplemented,
+    LastError
+};
+
+auto nullExplainHandler_ = [](const char* errmsg) { return std::string(errmsg); };
+
+struct AckStatus
+{
+    using AckStatusPtr = std::shared_ptr<AckStatus>;
+    using EH = std::function< std::string(const char*) >;
+    static AckStatusPtr fromError(std::string currentCmd, Error error, EH&& explainHandler =nullExplainHandler_, int cmdNumber =0) {
+        AckStatus status;
+        status.currentCmd_ = currentCmd;
+        status.error_ = error;
+        status.cmdNumber_ = cmdNumber;
+        status.explainHandler_ = explainHandler;
+        return std::make_shared<AckStatus>(status);
+    }
+    std::string toString() const;
+private:
+    std::string currentCmd_;
+    Error error_;
+    int cmdNumber_;
+    EH explainHandler_;
+};
+
+using AckStatusPtr = std::shared_ptr<AckStatus>;
+
 struct ClientMessage
 {
     static constexpr auto max_cmd_length = 100;
@@ -43,6 +74,7 @@ struct ClientMessage
     void setResponse(std::string response) {
         std::strncpy(response_, response.c_str(), max_response_length -1);
     }
+    void setResponse(AckStatusPtr ackStatus);
     io::streambuf & commandBuffer() {
         return commandBuffer_;
     }
@@ -56,31 +88,6 @@ private:
 
 using ClientMessagePtr = std::shared_ptr<ClientMessage>;
 
-enum class Error : std::size_t {
-    NoError =0,
-    UnknownCommand,
-    LastError
-};
-
-auto nullExplainHandler_ = [](const char* errmsg) { return std::string(errmsg); };
-
-struct AckStatus
-{
-    static AckStatus fromError(std::string currentCmd, Error error, int cmdNumber =0) {
-        AckStatus status;
-        status.currentCmd_ = currentCmd;
-        status.error_ = error;
-        status.cmdNumber_ = cmdNumber;
-        return std::move(status);
-    }
-    using EH = std::function< std::string(const char*) >;
-    std::string toString(EH&& explainHandler =nullExplainHandler_) const;
-private:
-    std::string currentCmd_;
-    Error error_;
-    int cmdNumber_;
-
-};
 
 using socket_t = io::ip::tcp::socket;
 

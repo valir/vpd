@@ -36,15 +36,20 @@ int ClientSession::nextSessionNumber = 0;
 const char* errorMessages_[static_cast<std::size_t>(Error::LastError)] = {
     "No error",
     "unknown command",
+    "command not implemented"
 };
 
-std::string AckStatus::toString(EH&& explainHandler) const {
+std::string AckStatus::toString() const {
     std::stringbuf sb;
     std::ostream os(&sb);
     os << "ACK [" << static_cast<std::size_t>(error_) << "@" << cmdNumber_ << "] {"
-        << currentCmd_ << "} " << explainHandler(errorMessages_[static_cast<std::size_t>(error_)])
+        << currentCmd_ << "} " << explainHandler_(errorMessages_[static_cast<std::size_t>(error_)])
         << "\r\n";
     return sb.str();
+}
+
+void ClientMessage::setResponse(AckStatusPtr ackStatus) {
+    setResponse(ackStatus->toString());
 }
 
 struct ClientCommand : public std::enable_shared_from_this<ClientCommand>
@@ -52,20 +57,22 @@ struct ClientCommand : public std::enable_shared_from_this<ClientCommand>
     using CommandParams = std::vector<std::string>;
     using CommandParamsPtr = std::shared_ptr<CommandParams>;
     using ClientCommandPtr = std::shared_ptr<ClientCommand>;
-    using CommandFunc_t = std::function<void(ClientCommandPtr, ClientSessionPtr)>;
+    using CommandFunc_t = std::function< AckStatusPtr(ClientCommandPtr, ClientSessionPtr) >;
     ClientCommand(ClientMessagePtr& clientMsg, CommandFunc_t action) :
         clientMsg_(clientMsg)
         , command_(action) {
         }
-    void execute(ClientSessionPtr session) {
-        command_(shared_from_this(), session);
+    AckStatusPtr execute(ClientSessionPtr session) {
+        return command_(shared_from_this(), session);
     }
-    void extractParams(std::istream& is) {
+    void extractParams(const std::string& opcode, std::istream& is) {
+        opcode_ = opcode;
         std::string param;
         while (is >> param) {
             params_.push_back(param);
         }
     }
+    const std::string& opcode() const { return opcode_; }
 private:
     ClientMessagePtr &clientMsg_;
     CommandFunc_t command_;
@@ -79,20 +86,24 @@ auto noParamsFun = [](ClientMessagePtr) { return std::make_shared<ClientCommand:
 
 auto closeFactory = [](ClientMessagePtr msg){
     return std::make_shared<ClientCommand>(msg,
-                [](ClientCommandPtr, ClientSessionPtr session) {
+                [](ClientCommandPtr cmd, ClientSessionPtr session) {
                     session->closeSession();
+                    return AckStatus::fromError(cmd->opcode(), Error::LastError);
                 } );
     };
 
 auto statusFactory = [](ClientMessagePtr msg){
     return std::make_shared<ClientCommand>(msg,
-                [](ClientCommandPtr, ClientSessionPtr) { } );
+                [](ClientCommandPtr cmd, ClientSessionPtr) {
+                    return AckStatus::fromError(cmd->opcode(), Error::CommandNotImplemented);
+                } );
     };
 
 auto playFactory = [](ClientMessagePtr msg){
     return std::make_shared<ClientCommand>(msg,
-                [](ClientCommandPtr, ClientSessionPtr session) {
+                [](ClientCommandPtr cmd, ClientSessionPtr session) {
                     session->play();
+                    return AckStatus::fromError(cmd->opcode(), Error::LastError);
                 } );
     };
 
@@ -117,7 +128,9 @@ ClientCommandPtr clientCommandFactory(ClientMessagePtr clientMsg) {
     if (factory != knownFactories.end()) {
         BOOST_LOG_TRIVIAL(debug) << "factory found for " << opcode << " command";
         command = (*factory).second(clientMsg);
-        command->extractParams(is);
+        command->extractParams(opcode, is);
+    } else {
+        clientMsg->setResponse(AckStatus::fromError(opcode, Error::UnknownCommand));
     }
     return command;
 }
@@ -166,9 +179,7 @@ void ClientSession::handleMessage(ClientMessagePtr msg) {
     auto clientCmd = clientCommandFactory(msg);
     if (clientCmd) {
         BOOST_LOG_TRIVIAL(debug) << "SESS " << sessionNumber_ << " CMD";
-        clientCmd->execute(shared_from_this());
-    } else {
-        BOOST_LOG_TRIVIAL(debug) << "SESS " << sessionNumber_ << " UNKOWN CMD!";
+        msg->setResponse(clientCmd->execute(shared_from_this()));
     }
     clientMessageHandled(msg);
 }
