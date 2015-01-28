@@ -198,6 +198,7 @@ struct EngineStatus
     }
     std::vector<std::string> messages_;
 };
+
 void play(std::string uri) {
     // NOTE should we use cpp-netlib for URI parsing ?
     auto proto_end = uri.find_first_of(':');
@@ -210,6 +211,9 @@ void play(std::string uri) {
     } else {
 
     }
+}
+
+void play(int pos) {
 }
 
 } // namespace PlayEngine

@@ -35,6 +35,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <utility>
 #include <boost/test/included/unit_test.hpp>
 #include <boost/asio.hpp>
 #include <boost/process.hpp>
@@ -42,6 +43,8 @@
 namespace io = boost::asio;
 namespace bp = boost::process;
 using namespace std;
+using socket_t = io::ip::tcp::socket;
+using socket_ptr = std::shared_ptr< socket_t >;
 
 int getProcIdByName(string procName)
 {
@@ -143,14 +146,24 @@ struct AsioSetup {
 
 BOOST_FIXTURE_TEST_SUITE(s, AsioSetup)
 
-BOOST_AUTO_TEST_CASE( server_accept_connection ) {
-    BOOST_TEST_MESSAGE("Testing server_accept_connection");
-    io::ip::tcp::socket socket(io_service_);
+socket_ptr connect_to_server(io::io_service& io_service, io::ip::tcp::resolver::iterator& epi, bool eatHello =true) {
+    auto socket = std::make_shared< socket_t >(io_service);
     boost::system::error_code ec;
-    socket.connect(*epi_, ec);
+    socket->connect(*epi, ec);
     BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
     BOOST_CHECK(!ec);
-    socket.close();
+    if (eatHello) {
+        io::streambuf data;
+        auto bytes = io::read_until(*socket, data, "\r\n", ec);
+        BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
+        BOOST_REQUIRE(!ec);
+    }
+    return socket;
+}
+
+BOOST_AUTO_TEST_CASE( server_accept_connection ) {
+    BOOST_TEST_MESSAGE("Testing server_accept_connection");
+    socket_ptr socket = connect_to_server(io_service_, epi_);
 }
 
 #define VPDN(n) #n
@@ -159,13 +172,10 @@ BOOST_AUTO_TEST_CASE( server_accept_connection ) {
 
 BOOST_AUTO_TEST_CASE( server_responds_hello ) {
     BOOST_TEST_MESSAGE("Testing servers responds hello");
-    io::ip::tcp::socket socket(io_service_);
+    socket_ptr socket = connect_to_server(io_service_, epi_, false);
     boost::system::error_code ec;
-    socket.connect(*epi_, ec);
-    BOOST_CHECK(!ec);
-    ec.clear();
     io::streambuf data;
-    auto bytes = io::read_until(socket, data, "\r\n", ec);
+    auto bytes = io::read_until(*socket, data, "\r\n", ec);
     BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
     BOOST_REQUIRE(!ec);
     std::istream datais(&data);
@@ -175,8 +185,20 @@ BOOST_AUTO_TEST_CASE( server_responds_hello ) {
     BOOST_MESSAGE("server greeting is: " << static_cast<char*>(response));
     BOOST_MESSAGE("expected greeting is: " VPD_WELCOME_LINE);
     BOOST_REQUIRE(strncmp(response, VPD_WELCOME_LINE, bytes) == 0);
+}
 
-    socket.close();
+BOOST_AUTO_TEST_CASE( server_closes_connection_on_close ) {
+    BOOST_TEST_MESSAGE("Testing server is closing connection");
+    socket_ptr socket = connect_to_server(io_service_, epi_);
+    boost::system::error_code ec;
+    const char closeCmd[] = "close\r\n";
+    auto bytes = io::write(*socket, io::buffer(closeCmd), ec);
+    BOOST_REQUIRE(!ec);
+    BOOST_REQUIRE(bytes == sizeof(closeCmd));
+    boost::array<char, 256> data;
+    ec.clear();
+    bytes = socket->read_some(io::buffer(data), ec);
+    BOOST_REQUIRE(ec);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

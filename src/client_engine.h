@@ -35,10 +35,12 @@ namespace io = boost::asio;
 namespace ClientEngine
 {
 
+// when adding error codes here, never forget to also add the corresponding string into the errorMessages_ table
 enum class Error : std::size_t {
     NoError =0,
     UnknownCommand,
     CommandNotImplemented,
+    TooManyArgs,
     LastError
 };
 
@@ -90,6 +92,8 @@ using ClientMessagePtr = std::shared_ptr<ClientMessage>;
 
 
 using socket_t = io::ip::tcp::socket;
+using CommandParams = std::vector<std::string>;
+using CommandParamsArg = const CommandParams&;
 
 struct ClientSession : public std::enable_shared_from_this<ClientSession>
 {
@@ -100,7 +104,7 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
 
     // follow the client commands
     void closeSession();
-    void play();
+    void play(int pos);
 private:
     void readNextCommand();
     void handleMessage(ClientMessagePtr msg);

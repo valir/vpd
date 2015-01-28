@@ -30,6 +30,7 @@ namespace PlayEngine {
 int start(const RuntimeConfig &config);
 void sessionClosed(ClientEngine::ClientSessionPtr sessionPtr);
 void play(std::string uri);
+void play(int pos);
 
 } // namespace PlayEngine
 

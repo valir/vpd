@@ -36,15 +36,20 @@ int ClientSession::nextSessionNumber = 0;
 const char* errorMessages_[static_cast<std::size_t>(Error::LastError)] = {
     "No error",
     "unknown command",
-    "command not implemented"
+    "command not implemented",
+    "too many arguments"
 };
 
 std::string AckStatus::toString() const {
     std::stringbuf sb;
     std::ostream os(&sb);
-    os << "ACK [" << static_cast<std::size_t>(error_) << "@" << cmdNumber_ << "] {"
-        << currentCmd_ << "} " << explainHandler_(errorMessages_[static_cast<std::size_t>(error_)])
-        << "\r\n";
+    if (error_ == Error::NoError) {
+        os << "OK\r\n";
+    } else {
+        os << "ACK [" << static_cast<std::size_t>(error_) << "@" << cmdNumber_ << "] {"
+            << currentCmd_ << "} " << explainHandler_(errorMessages_[static_cast<std::size_t>(error_)])
+            << "\r\n";
+    }
     return sb.str();
 }
 
@@ -54,7 +59,6 @@ void ClientMessage::setResponse(AckStatusPtr ackStatus) {
 
 struct ClientCommand : public std::enable_shared_from_this<ClientCommand>
 {
-    using CommandParams = std::vector<std::string>;
     using CommandParamsPtr = std::shared_ptr<CommandParams>;
     using ClientCommandPtr = std::shared_ptr<ClientCommand>;
     using CommandFunc_t = std::function< AckStatusPtr(ClientCommandPtr, ClientSessionPtr) >;
@@ -72,7 +76,8 @@ struct ClientCommand : public std::enable_shared_from_this<ClientCommand>
             params_.push_back(param);
         }
     }
-    const std::string& opcode() const { return opcode_; }
+    const CommandParams& params() const noexcept { return params_; }
+    const std::string& opcode() const noexcept { return opcode_; }
 private:
     ClientMessagePtr &clientMsg_;
     CommandFunc_t command_;
@@ -82,7 +87,7 @@ private:
 
 using ClientCommandPtr = std::shared_ptr<ClientCommand>;
 
-auto noParamsFun = [](ClientMessagePtr) { return std::make_shared<ClientCommand::CommandParams>(); };
+auto noParamsFun = [](ClientMessagePtr) { return std::make_shared<CommandParams>(); };
 
 auto closeFactory = [](ClientMessagePtr msg){
     return std::make_shared<ClientCommand>(msg,
@@ -102,8 +107,15 @@ auto statusFactory = [](ClientMessagePtr msg){
 auto playFactory = [](ClientMessagePtr msg){
     return std::make_shared<ClientCommand>(msg,
                 [](ClientCommandPtr cmd, ClientSessionPtr session) {
-                    session->play();
-                    return AckStatus::fromError(cmd->opcode(), Error::LastError);
+                    if (cmd->params().size() >1) {
+                        return AckStatus::fromError(cmd->opcode(), Error::TooManyArgs);
+                    }
+                    int pos = 0;
+                    if (cmd->params().size() >0) {
+                        pos = std::stoi(cmd->params()[0]);
+                    }
+                    session->play(pos);
+                    return AckStatus::fromError(cmd->opcode(), Error::NoError);
                 } );
     };
 
@@ -197,11 +209,18 @@ void ClientSession::clientMessageHandled(ClientMessagePtr msg) {
 }
 
 void ClientSession::closeSession() {
-    socket_.close();
-    PlayEngine::sessionClosed(shared_from_this());
+    socket_.get_io_service().post(
+        [self = shared_from_this()]() {
+            self->socket_.close();
+            PlayEngine::sessionClosed(self);
+        });
 }
 
-void ClientSession::play() {
+void ClientSession::play(int pos) {
+    socket_.get_io_service().post(
+        [self = shared_from_this(), pos]() {
+            PlayEngine::play(pos);
+        });
 }
 
 } // ClientEngine
