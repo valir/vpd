@@ -22,8 +22,25 @@
 #ifndef ASIO_SETUP_H
 #define ASIO_SETUP_H
 
+#include <sys/types.h>
+#include <signal.h>
+#include <dirent.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <iostream>
+#include <thread>
+#include <future>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <utility>
 #include <boost/asio.hpp>
 #include <boost/process.hpp>
+#include <boost/test/included/unit_test.hpp>
+
+#include "config.h"
 
 namespace io = boost::asio;
 namespace bp = boost::process;
@@ -128,5 +145,20 @@ struct AsioSetup {
     int vpd_pid_;
     std::thread asio_thread_;
 };
+
+socket_ptr connect_to_server(io::io_service& io_service, io::ip::tcp::resolver::iterator& epi, bool eatHello =true) {
+    auto socket = std::make_shared< socket_t >(io_service);
+    boost::system::error_code ec;
+    socket->connect(*epi, ec);
+    BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
+    BOOST_CHECK(!ec);
+    if (eatHello) {
+        io::streambuf data;
+        auto bytes = io::read_until(*socket, data, "\r\n", ec);
+        BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
+        BOOST_REQUIRE(!ec);
+    }
+    return socket;
+}
 
 #endif // ASIO_SETUP_H

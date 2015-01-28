@@ -20,42 +20,10 @@
  */
 #define BOOST_TEST_MODULE ClientConnection
 
-#include "config.h"
-
-#include <sys/types.h>
-#include <signal.h>
-#include <dirent.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <iostream>
-#include <thread>
-#include <future>
-#include <vector>
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <utility>
-#include <boost/test/included/unit_test.hpp>
 #include "asio_setup.h"
 
 
 BOOST_FIXTURE_TEST_SUITE(s, AsioSetup)
-
-socket_ptr connect_to_server(io::io_service& io_service, io::ip::tcp::resolver::iterator& epi, bool eatHello =true) {
-    auto socket = std::make_shared< socket_t >(io_service);
-    boost::system::error_code ec;
-    socket->connect(*epi, ec);
-    BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
-    BOOST_CHECK(!ec);
-    if (eatHello) {
-        io::streambuf data;
-        auto bytes = io::read_until(*socket, data, "\r\n", ec);
-        BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
-        BOOST_REQUIRE(!ec);
-    }
-    return socket;
-}
 
 BOOST_AUTO_TEST_CASE( server_accept_connection ) {
     BOOST_TEST_MESSAGE("Testing server_accept_connection");
