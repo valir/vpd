@@ -56,6 +56,7 @@ struct StdOutNullDevice
 
 io::io_service ioservice_;
 io::ip::tcp::acceptor acceptor(ioservice_);
+io::signal_set signals(ioservice_);
 
 class Player {
 public:
@@ -63,15 +64,13 @@ public:
 };
 
 void handle_signals() {
-    io::signal_set signals(ioservice_);
-
     signals.add(SIGINT);
     signals.add(SIGTERM);
     signals.add(SIGQUIT);
     signals.async_wait(
         [](const boost::system::error_code &ec, int signum) {
             if (ec) {
-                BOOST_LOG_TRIVIAL(error) << "error ecountered when waiting for signals. code: " << ec.message();
+                BOOST_LOG_TRIVIAL(error) << "error ecountered when waiting for signals. code: " << ec.value() << "(" << ec.message() << ")";
             } else {
                 BOOST_LOG_TRIVIAL(info) << "received signal " << signum << ". Quitting...";
                 ioservice_.stop();
