@@ -161,4 +161,11 @@ socket_ptr connect_to_server(io::io_service& io_service, io::ip::tcp::resolver::
     return socket;
 }
 
+void send_cmd(socket_ptr socket, std::string cmd) {
+    boost::system::error_code ec;
+    auto bytes = io::write(*socket, io::buffer(cmd), ec);
+    BOOST_REQUIRE(!ec);
+    BOOST_REQUIRE(bytes == cmd.size());
+}
+
 #endif // ASIO_SETUP_H

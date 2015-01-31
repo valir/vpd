@@ -117,6 +117,9 @@ START_CMD(play)
     session->play(pos);
     return AckStatus::fromError(cmd->opcode(), Error::NoError);
 END_CMD()
+START_CMD(add)
+    return AckStatus::fromError(cmd->opcode(), Error::CommandNotImplemented);
+END_CMD()
 
 using Factory_t = std::function<ClientCommandPtr(ClientMessagePtr)>;
 std::map< std::string, Factory_t > knownFactories;
@@ -126,6 +129,7 @@ bool initKnownFactories() {
     REGISTER_CMD(status)
     REGISTER_CMD(close)
     REGISTER_CMD(play)
+    REGISTER_CMD(add)
     return true;
 };
 

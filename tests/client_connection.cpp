@@ -54,15 +54,17 @@ BOOST_AUTO_TEST_CASE( server_responds_hello ) {
 BOOST_AUTO_TEST_CASE( server_closes_connection_on_close ) {
     BOOST_TEST_MESSAGE("Testing server is closing connection");
     socket_ptr socket = connect_to_server(io_service_, epi_);
-    boost::system::error_code ec;
     const char closeCmd[] = "close\r\n";
-    auto bytes = io::write(*socket, io::buffer(closeCmd), ec);
-    BOOST_REQUIRE(!ec);
-    BOOST_REQUIRE(bytes == sizeof(closeCmd));
-    boost::array<char, 256> data;
+    send_cmd(socket, closeCmd);
+    boost::array<char, 16384> data;
+    boost::system::error_code ec;
     ec.clear();
+
+    // FIXME find out why 512 bytes are sent before close
+    auto bytes = socket->read_some(io::buffer(data), ec);
+    BOOST_REQUIRE(!ec);
     bytes = socket->read_some(io::buffer(data), ec);
-    BOOST_REQUIRE(ec);
+    BOOST_REQUIRE(ec == io::error::eof);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
