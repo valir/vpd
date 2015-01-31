@@ -87,46 +87,45 @@ private:
 
 using ClientCommandPtr = std::shared_ptr<ClientCommand>;
 
-auto noParamsFun = [](ClientMessagePtr) { return std::make_shared<CommandParams>(); };
+#define START_CMD(cmdname) \
+    auto cmdname ## _factory = [](ClientMessagePtr msg){\
+        return std::make_shared<ClientCommand>(msg,\
+                    [](ClientCommandPtr cmd, ClientSessionPtr session) {
 
-auto closeFactory = [](ClientMessagePtr msg){
-    return std::make_shared<ClientCommand>(msg,
-                [](ClientCommandPtr cmd, ClientSessionPtr session) {
-                    session->closeSession();
-                    return AckStatus::fromError(cmd->opcode(), Error::LastError);
-                } );
-    };
+#define END_CMD() \
+                    } );\
+        };
 
-auto statusFactory = [](ClientMessagePtr msg){
-    return std::make_shared<ClientCommand>(msg,
-                [](ClientCommandPtr cmd, ClientSessionPtr) {
-                    return AckStatus::fromError(cmd->opcode(), Error::CommandNotImplemented);
-                } );
-    };
+#define REGISTER_CMD(name) \
+    knownFactories.emplace(#name, name ## _factory);
 
-auto playFactory = [](ClientMessagePtr msg){
-    return std::make_shared<ClientCommand>(msg,
-                [](ClientCommandPtr cmd, ClientSessionPtr session) {
-                    if (cmd->params().size() >1) {
-                        return AckStatus::fromError(cmd->opcode(), Error::TooManyArgs);
-                    }
-                    int pos = 0;
-                    if (cmd->params().size() >0) {
-                        pos = std::stoi(cmd->params()[0]);
-                    }
-                    session->play(pos);
-                    return AckStatus::fromError(cmd->opcode(), Error::NoError);
-                } );
-    };
+START_CMD(close)
+    session->closeSession();
+    return AckStatus::fromError(cmd->opcode(), Error::LastError);
+END_CMD()
+START_CMD(status)
+    return AckStatus::fromError(cmd->opcode(), Error::CommandNotImplemented);
+END_CMD()
+START_CMD(play)
+    if (cmd->params().size() >1) {
+        return AckStatus::fromError(cmd->opcode(), Error::TooManyArgs);
+    }
+    int pos = 0;
+    if (cmd->params().size() >0) {
+        pos = std::stoi(cmd->params()[0]);
+    }
+    session->play(pos);
+    return AckStatus::fromError(cmd->opcode(), Error::NoError);
+END_CMD()
 
 using Factory_t = std::function<ClientCommandPtr(ClientMessagePtr)>;
 std::map< std::string, Factory_t > knownFactories;
 
 /** brace initialization won't work for the knownFactories map, so use this classical init function */
 bool initKnownFactories() {
-    knownFactories.emplace( "status", statusFactory );
-    knownFactories.emplace( "close" , closeFactory );
-    knownFactories.emplace( "play", playFactory );
+    REGISTER_CMD(status)
+    REGISTER_CMD(close)
+    REGISTER_CMD(play)
     return true;
 };
 
