@@ -60,11 +60,8 @@ BOOST_AUTO_TEST_CASE( server_closes_connection_on_close ) {
     boost::system::error_code ec;
     ec.clear();
 
-    // FIXME find out why 512 bytes are sent before close
     auto bytes = socket->read_some(io::buffer(data), ec);
-    BOOST_REQUIRE(!ec);
-    bytes = socket->read_some(io::buffer(data), ec);
-    BOOST_REQUIRE(ec == io::error::eof);
+    BOOST_REQUIRE(ec.value() == io::error::eof);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

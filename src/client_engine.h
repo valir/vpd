@@ -74,7 +74,7 @@ struct ClientMessage
     static constexpr auto max_response_length = 1024;
     ClientMessage() : commandBuffer_(max_cmd_length) {}
     void setResponse(std::string response) {
-        std::strncpy(response_, response.c_str(), max_response_length -1);
+        response_ = response;
     }
     void setResponse(AckStatusPtr ackStatus);
     io::streambuf & commandBuffer() {
@@ -85,7 +85,7 @@ struct ClientMessage
     }
 private:
     io::streambuf commandBuffer_;
-    char response_[max_response_length];
+    std::string response_;
 };
 
 using ClientMessagePtr = std::shared_ptr<ClientMessage>;
