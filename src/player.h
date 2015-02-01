@@ -1,4 +1,4 @@
-/*
+ /*
  * This file is part of the Video Player Daemon
  *
  * Copyright (C) 2015 Valentin Rusu kde@rusu.info
@@ -18,14 +18,36 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  */
+#ifndef PLAYER_H
+#define PLAYER_H
 
 #include "playlist.h"
 
-#include <algorithm>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 
-void Playlist::enumerate(enumPlaylistFn fn) const {
-    for (const PlaylistItem &item : items_) {
-        fn(item);
-    }
-}
+namespace Player {
 
+using namespace boost::posix_time;
+
+struct Status
+{
+    int volume_;
+    bool repeat_;
+    bool random_;
+    bool single_;
+    bool consume_;
+    int playlist_;
+    int playlistLength_;
+    int song_;
+    int songid_;
+    time_duration time_;
+    time_duration elapsed_;
+    std::string nextVideo_;
+    int nextVideoId_;
+};
+
+Playlist& playlist();
+const Status& status();
+
+} // namespace
+#endif // PLAYER_H

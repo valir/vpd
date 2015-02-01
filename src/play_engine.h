@@ -24,6 +24,7 @@
 
 #include "runtime_config.h"
 #include "client_engine.h"
+#include "player.h"
 
 namespace PlayEngine {
 
@@ -35,6 +36,7 @@ void play(int pos);
 // playlist commands
 void add(const std::string& uri);
 void enumeratePlaylist(enumPlaylistFn fn);
+const Player::Status& status();
 
 } // namespace PlayEngine
 

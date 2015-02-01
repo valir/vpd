@@ -21,6 +21,7 @@
 #include "play_engine.h"
 #include "config.h"
 #include "playlist.h"
+#include "player.h"
 
 #include <thread>
 #include <future>
@@ -58,17 +59,6 @@ struct StdOutNullDevice
 io::io_service ioservice_;
 io::ip::tcp::acceptor acceptor(ioservice_);
 io::signal_set signals(ioservice_);
-
-class Player {
-public:
-    Player() {}
-
-    Playlist& playlist() { return playlist_; }
-private:
-    Playlist playlist_;
-};
-
-Player player;
 
 void handle_signals() {
     signals.add(SIGINT);
@@ -196,14 +186,6 @@ int playSopcast(std::string uri) {
     return 0;
 }
 
-struct EngineStatus
-{
-    void addStatusMessage(std::string msg) {
-        messages_.push_back(msg);
-    }
-    std::vector<std::string> messages_;
-};
-
 void play(std::string uri) {
     // NOTE should we use cpp-netlib for URI parsing ?
     auto proto_end = uri.find_first_of(':');
@@ -222,12 +204,15 @@ void play(int pos) {
 }
 
 void add(const std::string &uri) {
-    player.playlist().add(uri);
+    Player::playlist().add(uri);
 }
 
 void enumeratePlaylist(enumPlaylistFn fn) {
-    player.playlist().enumerate(fn);
+    Player::playlist().enumerate(fn);
 }
 
+const Player::Status& status() {
+    return Player::status();
+}
 } // namespace PlayEngine
 

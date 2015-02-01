@@ -24,6 +24,7 @@
 
 #include "runtime_config.h"
 #include "playlist.h"
+#include "player.h"
 
 #include <string>
 #include <boost/asio.hpp>
@@ -122,6 +123,7 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
     void add(const std::string &uri);
     bool isValidUri(const std::string &uri) const noexcept;
     void enumeratePlaylist(enumPlaylistFn fn);
+    const Player::Status& status() const;
 private:
     void readNextCommand();
     void handleMessage(ClientMessagePtr msg);

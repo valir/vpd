@@ -19,13 +19,24 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "playlist.h"
+#include "player.h"
 
-#include <algorithm>
+namespace Player {
 
-void Playlist::enumerate(enumPlaylistFn fn) const {
-    for (const PlaylistItem &item : items_) {
-        fn(item);
-    }
+Playlist playlist_;
+Status status_;
+
+
+Playlist& playlist() {
+    return playlist_;
 }
 
+void updateStatus() {
+}
+
+const Status& status() {
+    updateStatus();
+    return status_;
+}
+
+} // namespace

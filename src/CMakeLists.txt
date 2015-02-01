@@ -16,6 +16,7 @@ set(VPD_SRCS
     client_engine.cpp
     play_engine.cpp
     playlist.cpp
+    player.cpp
     )
 add_executable(vpd ${VPD_SRCS})
 target_link_libraries(vpd
