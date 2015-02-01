@@ -32,6 +32,7 @@ int start(const RuntimeConfig &config);
 void sessionClosed(ClientEngine::ClientSessionPtr sessionPtr);
 void play(std::string uri);
 void play(int pos);
+void stop();
 
 // playlist commands
 void add(const std::string& uri);

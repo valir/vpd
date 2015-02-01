@@ -203,6 +203,10 @@ void play(std::string uri) {
 void play(int pos) {
 }
 
+void stop() {
+    // TODO
+}
+
 void add(const std::string &uri) {
     Player::playlist().add(uri);
 }
@@ -213,7 +217,7 @@ void enumeratePlaylist(enumPlaylistFn fn) {
 
 void clearPlaylist() {
     Player::playlist().items_.clear();
-    // TODO also stop playing
+    stop();
 }
 
 const Player::Status& status() {
