@@ -38,12 +38,15 @@ using enumPlaylistFn = std::function< void(const PlaylistItem&) >;
 
 struct Playlist
 {
+    Playlist() : version_(0) {}
     void add(std::string uri) {
         BOOST_LOG_TRIVIAL(debug) << "Playlist: adding URI: " << uri;
         items_.emplace_back(uri);
+        version_++;
     }
     void enumerate(enumPlaylistFn fn) const;
     std::vector<PlaylistItem> items_;
+    uint32_t version_;
 };
 
 

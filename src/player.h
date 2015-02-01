@@ -38,8 +38,8 @@ struct Status
     bool consume_;
     int playlist_;
     int playlistLength_;
-    int song_;
-    int songid_;
+    int videoClip_;;
+    int videoClipId_;
     time_duration time_;
     time_duration elapsed_;
     std::string nextVideo_;

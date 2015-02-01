@@ -183,4 +183,21 @@ std::string recv_status(socket_ptr socket) {
     return result.substr(0, result.length() -1);
 }
 
+std::string vpd_status_line(socket_ptr socket, const char* prop) {
+    const char* cmdstatus = "status\r\n";
+    send_cmd(socket, cmdstatus);
+    std::string result;
+    for (;;) {
+        std::string si = recv_status(socket);
+        if (si == "OK")
+            break;
+        if (si.substr(0, strlen(prop)) == prop) {
+            result = si;
+            break;
+        }
+    }
+    BOOST_REQUIRE_MESSAGE(!result.empty(), "cannot find the \"" << prop << ":\" line in the vpd status output");
+    return result;
+}
+
 #endif // ASIO_SETUP_H

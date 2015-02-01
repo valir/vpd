@@ -26,8 +26,10 @@
 
 BOOST_FIXTURE_TEST_SUITE(s, AsioSetup)
 
-BOOST_AUTO_TEST_CASE( play_cmd ) {
+BOOST_AUTO_TEST_CASE( playlist_cmd ) {
     auto socket = connect_to_server(io_service_, epi_);
+
+    // TODO store the playlist version here and check later that it gets increased by successive modifications
     auto uri_protv = "sop://broker.sopcast.com:3912/149252";
     std::string cmdadd = std::string("add ").append(uri_protv).append("\r\n"); // this protv channel from romania
     send_cmd(socket, cmdadd);
@@ -70,6 +72,8 @@ BOOST_AUTO_TEST_CASE( play_cmd ) {
 
     info = recv_status(socket);
     BOOST_REQUIRE(info == "OK");
+
+    BOOST_CHECK_EQUAL(vpd_status_line(socket, "playlistlength"), "playlistlength: 1");
 
     // TODO clear the playlist
 }

@@ -118,15 +118,18 @@ using ClientCommandPtr = std::shared_ptr<ClientCommand>;
     return AckStatus::ok();
 
 template <typename T>
-std::ostream& writeProp(std::ostream& os, const char* propName, T&& val) {
+void writeProp(std::ostream& os, const char* propName, T const& val) {
     os << propName << ": " << val << "\r\n";
-    return os;
 }
 
 template<>
-std::ostream& writeProp<bool>(std::ostream& os, const char* propName, bool&& val) {
+void writeProp<bool>(std::ostream& os, const char* propName, bool const& val) {
     os << propName << ": " << (val ? "1" : "0") << "\r\n";
-    return os;
+}
+
+template <>
+void writeProp<boost::posix_time::time_duration>(std::ostream& os, const char* propName, boost::posix_time::time_duration const& val) {
+    os << propName << ": " << val.hours() << ":" << val.seconds() << "\r\n";
 }
 
 START_CMD_NOARGS(close)
@@ -137,10 +140,19 @@ START_CMD_NOARGS(status)
     std::stringbuf buf;
     std::ostream os(&buf);
     auto si = session->status();
-    writeProp(os, "volume: ", si.volume_);
-    writeProp(os, "repeat: ", si.repeat_);
-    writeProp(os, "random: ", si.random_);
-    writeProp(os, "single: ", si.single_);
+    writeProp(os, "volume", si.volume_);
+    writeProp(os, "repeat", si.repeat_);
+    writeProp(os, "random", si.random_);
+    writeProp(os, "single", si.single_);
+    writeProp(os, "consume", si.consume_);
+    writeProp(os, "playlist", si.playlist_);
+    writeProp(os, "playlistlength", si.playlistLength_);
+    writeProp(os, "videoclip", si.videoClip_);
+    writeProp(os, "videoClipId", si.videoClipId_);
+    writeProp(os, "time", si.time_);
+    writeProp(os, "elapsed", si.elapsed_);
+    writeProp(os, "nextvideoclip", si.nextVideo_);
+    writeProp(os, "nextvideoid", si.nextVideoId_);
     return AckStatus::ok(buf.str());
 END_CMD()
 START_CMD_NOARGS(play)
@@ -175,13 +187,13 @@ START_CMD(playlistinfo)
     int pos =0;
     session->enumeratePlaylist(
         [&](const PlaylistItem &item) {
-            os << "file: " << item.uri_ << "\r\n";
+            writeProp(os, "file", item.uri_);
             if (!item.name_.empty()) {
-                os << "name: " << item.name_ << "\r\n";
+                writeProp(os, "name", item.name_);
             }
-            os << "Pos: " << pos++ << "\r\n";
+            writeProp(os, "Pos", pos++);
             if (item.id_ >=0) {
-                os << "Id: " << item.id_ << "\r\n";
+                writeProp(os, "Id", item.id_);
             }
         });
     auto results = obuf.str();

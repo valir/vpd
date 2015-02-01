@@ -20,6 +20,7 @@
  */
 
 #include "player.h"
+#include "playlist.h"
 
 namespace Player {
 
@@ -32,6 +33,8 @@ Playlist& playlist() {
 }
 
 void updateStatus() {
+    status_.playlist_ = playlist_.version_;
+    status_.playlistLength_ = playlist_.items_.size();
 }
 
 const Status& status() {
