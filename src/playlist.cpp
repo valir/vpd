@@ -1,7 +1,7 @@
 /*
- * This file is part of the VPD project
+ * This file is part of the Video Player Daemon
  *
- * Copyright (C) 2014 Valentin Rusu kde@rusu.info
+ * Copyright (C) 2015 Valentin Rusu kde@rusu.info
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -19,23 +19,11 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef  PLAY_ENGINE_INC
-#define  PLAY_ENGINE_INC
+#include "playlist.h"
 
-#include "runtime_config.h"
-#include "client_engine.h"
+#include <algorithm>
 
-namespace PlayEngine {
+void Playlist::enumerate(enumPlaylistFn fn) const {
+    std::for_each(items_.begin(), items_.end(), fn);
+}
 
-int start(const RuntimeConfig &config);
-void sessionClosed(ClientEngine::ClientSessionPtr sessionPtr);
-void play(std::string uri);
-void play(int pos);
-
-// playlist commands
-void add(const std::string& uri);
-void enumeratePlaylist(enumPlaylistFn fn);
-
-} // namespace PlayEngine
-
-#endif // PLAY_ENGINE_INC

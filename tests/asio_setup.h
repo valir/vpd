@@ -162,10 +162,25 @@ socket_ptr connect_to_server(io::io_service& io_service, io::ip::tcp::resolver::
 }
 
 void send_cmd(socket_ptr socket, std::string cmd) {
+    BOOST_REQUIRE(cmd.substr(cmd.length() -2) == "\r\n");
     boost::system::error_code ec;
     auto bytes = io::write(*socket, io::buffer(cmd), ec);
     BOOST_REQUIRE(!ec);
     BOOST_REQUIRE(bytes == cmd.size());
+}
+
+io::streambuf data;
+
+std::string recv_status(socket_ptr socket) {
+    boost::system::error_code ec;
+    auto bytes = io::read_until(*socket, data, "\r\n", ec);
+    BOOST_REQUIRE(!ec);
+    BOOST_REQUIRE(bytes >0);
+    std::istream is(&data);
+    std::string result;
+    std::getline(is, result);
+    BOOST_REQUIRE(result.substr(result.length() -1) == "\r");
+    return result.substr(0, result.length() -1);
 }
 
 #endif // ASIO_SETUP_H

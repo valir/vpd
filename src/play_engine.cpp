@@ -20,6 +20,7 @@
  */
 #include "play_engine.h"
 #include "config.h"
+#include "playlist.h"
 
 #include <thread>
 #include <future>
@@ -61,7 +62,13 @@ io::signal_set signals(ioservice_);
 class Player {
 public:
     Player() {}
+
+    Playlist& playlist() { return playlist_; }
+private:
+    Playlist playlist_;
 };
+
+Player player;
 
 void handle_signals() {
     signals.add(SIGINT);
@@ -114,7 +121,6 @@ void accept_remote_connection(const RuntimeConfig &config) {
 void sessionClosed(ClientSessionPtr sessionPtr) {
     clientSessions_.remove(sessionPtr);
 }
-
 
 
 int start (const RuntimeConfig &config) {
@@ -213,6 +219,14 @@ void play(std::string uri) {
 }
 
 void play(int pos) {
+}
+
+void add(const std::string &uri) {
+    player.playlist().add(uri);
+}
+
+void enumeratePlaylist(enumPlaylistFn fn) {
+    player.playlist().enumerate(fn);
 }
 
 } // namespace PlayEngine

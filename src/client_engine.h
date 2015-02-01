@@ -23,6 +23,7 @@
 #define  CLIENT_ENGINE_H
 
 #include "runtime_config.h"
+#include "playlist.h"
 
 #include <string>
 #include <boost/asio.hpp>
@@ -41,6 +42,8 @@ enum class Error : std::size_t {
     UnknownCommand,
     CommandNotImplemented,
     TooManyArgs,
+    MissingParameter,
+    InvalidUri,
     LastError
 };
 
@@ -50,6 +53,16 @@ struct AckStatus
 {
     using AckStatusPtr = std::shared_ptr<AckStatus>;
     using EH = std::function< std::string(const char*) >;
+    /**
+     * @note results should contain the necessary \r\n end-of-line characters
+     */
+    static AckStatusPtr ok(std::string results = "", int cmdNumber =0) {
+        AckStatus status;
+        status.results_ = results;
+        status.error_ = Error::NoError;
+        status.cmdNumber_ = cmdNumber;
+        return std::make_shared<AckStatus>(status);
+    }
     static AckStatusPtr fromError(std::string currentCmd, Error error, EH&& explainHandler =nullExplainHandler_, int cmdNumber =0) {
         AckStatus status;
         status.currentCmd_ = currentCmd;
@@ -61,6 +74,7 @@ struct AckStatus
     std::string toString() const;
 private:
     std::string currentCmd_;
+    std::string results_;
     Error error_;
     int cmdNumber_;
     EH explainHandler_;
@@ -80,8 +94,8 @@ struct ClientMessage
     io::streambuf & commandBuffer() {
         return commandBuffer_;
     }
-    auto responseBuffer() {
-        return io::buffer(response_);
+    const std::string & response() const {
+        return response_;
     }
 private:
     io::streambuf commandBuffer_;
@@ -105,6 +119,9 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
     // follow the client commands
     void closeSession();
     void play(int pos);
+    void add(const std::string &uri);
+    bool isValidUri(const std::string &uri) const noexcept;
+    void enumeratePlaylist(enumPlaylistFn fn);
 private:
     void readNextCommand();
     void handleMessage(ClientMessagePtr msg);

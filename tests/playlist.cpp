@@ -28,6 +28,50 @@ BOOST_FIXTURE_TEST_SUITE(s, AsioSetup)
 
 BOOST_AUTO_TEST_CASE( play_cmd ) {
     auto socket = connect_to_server(io_service_, epi_);
+    auto uri_protv = "sop://broker.sopcast.com:3912/149252";
+    std::string cmdadd = std::string("add ").append(uri_protv).append("\r\n"); // this protv channel from romania
+    send_cmd(socket, cmdadd);
+    std::string addreply = recv_status(socket);
+    BOOST_REQUIRE(addreply == "OK");
+
+    { // test the case when no params are given
+        std::string cmdadd_noparams = "add\r\n";
+        send_cmd(socket, cmdadd_noparams);
+        std::string reply = recv_status(socket);
+        BOOST_REQUIRE(reply.substr(0, 3) == "ACK");
+        // TODO I think we also should test that the player sends "missing param" here
+    }
+    { // test the case when too many params are given
+        std::string cmdadd_noparams = "add param1 param2\r\n";
+        send_cmd(socket, cmdadd_noparams);
+        std::string reply = recv_status(socket);
+        BOOST_REQUIRE(reply.substr(0, 3) == "ACK");
+        // TODO I think we also should test that the player sends "too many params" here
+    }
+    { // test the case when an invalid URI is given
+        std::string cmdadd_noparams = "add paramInvalidURI\r\n";
+        send_cmd(socket, cmdadd_noparams);
+        std::string reply = recv_status(socket);
+        BOOST_REQUIRE(reply.substr(0, 3) == "ACK");
+    }
+
+    auto cmdplaylistinfo = "playlistinfo\r\n";
+    send_cmd(socket, cmdplaylistinfo);
+
+    std::string info = recv_status(socket);
+    BOOST_REQUIRE(info.substr(0, 5) == "file:");
+    BOOST_REQUIRE(info.substr(6) == uri_protv);
+
+    info = recv_status(socket);
+    BOOST_REQUIRE(info == "Pos: 0");
+
+    // info = recv_status(socket);
+    // BOOST_REQUIRE(info == "Id: 0");
+
+    info = recv_status(socket);
+    BOOST_REQUIRE(info == "OK");
+
+    // TODO clear the playlist
 }
 
 BOOST_AUTO_TEST_SUITE_END()

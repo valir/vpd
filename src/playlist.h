@@ -1,7 +1,7 @@
 /*
- * This file is part of the VPD project
+ * This file is part of the Video Player Daemon
  *
- * Copyright (C) 2014 Valentin Rusu kde@rusu.info
+ * Copyright (C) 2015 Valentin Rusu kde@rusu.info
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -18,24 +18,33 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  */
+#ifndef PLAYLIST_H
+#define PLAYLIST_H
 
-#ifndef  PLAY_ENGINE_INC
-#define  PLAY_ENGINE_INC
+#include <boost/log/trivial.hpp>
 
-#include "runtime_config.h"
-#include "client_engine.h"
+struct PlaylistItem
+{
+    explicit PlaylistItem(std::string uri) :
+        uri_(uri)
+        , id_(-1)
+    {}
+    std::string uri_;
+    std::string name_;
+    int id_;
+};
 
-namespace PlayEngine {
+using enumPlaylistFn = std::function< void(const PlaylistItem&) >;
 
-int start(const RuntimeConfig &config);
-void sessionClosed(ClientEngine::ClientSessionPtr sessionPtr);
-void play(std::string uri);
-void play(int pos);
+struct Playlist
+{
+    void add(std::string uri) {
+        BOOST_LOG_TRIVIAL(debug) << "Playlist: adding URI: " << uri;
+        items_.emplace_back(uri);
+    }
+    void enumerate(enumPlaylistFn fn) const;
+    std::vector<PlaylistItem> items_;
+};
 
-// playlist commands
-void add(const std::string& uri);
-void enumeratePlaylist(enumPlaylistFn fn);
 
-} // namespace PlayEngine
-
-#endif // PLAY_ENGINE_INC
+#endif // PLAYLIST_H
