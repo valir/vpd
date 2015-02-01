@@ -148,7 +148,7 @@ START_CMD_NOARGS(status)
     writeProp(os, "playlist", si.playlist_);
     writeProp(os, "playlistlength", si.playlistLength_);
     writeProp(os, "videoclip", si.videoClip_);
-    writeProp(os, "videoClipId", si.videoClipId_);
+    writeProp(os, "videoclipid", si.videoClipId_);
     writeProp(os, "time", si.time_);
     writeProp(os, "elapsed", si.elapsed_);
     writeProp(os, "nextvideoclip", si.nextVideo_);

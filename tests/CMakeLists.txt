@@ -12,3 +12,8 @@ add_executable(test_playlist playlist.cpp)
 target_link_libraries(test_playlist
     ${Boost_LIBRARIES} ${Boost_LIBRARIES} pthread)
 add_test(test_playlist test_playlist)
+
+add_executable(test_status status.cpp)
+target_link_libraries(test_status
+    ${Boost_LIBRARIES} ${Boost_LIBRARIES} pthread)
+add_test(test_status test_status)
