@@ -163,6 +163,10 @@ START_CMD_NOARGS(play)
     session->play(pos);
     RETURN_OK()
 END_CMD()
+START_CMD_NOARGS(clear)
+    session->clear();
+    RETURN_OK()
+END_CMD()
 START_CMD(add)
     if (cmd->params().size() >1) {
         return AckStatus::fromError(cmd->opcode(), Error::TooManyArgs);
@@ -208,6 +212,7 @@ bool initKnownFactories() {
     REGISTER_CMD(status)
     REGISTER_CMD(close)
     REGISTER_CMD(play)
+    REGISTER_CMD(clear)
     REGISTER_CMD(add)
     REGISTER_CMD(playlistinfo)
     return true;
@@ -342,5 +347,8 @@ const Player::Status& ClientSession::status() const {
     return PlayEngine::status();
 }
 
+void ClientSession::clear() const {
+    PlayEngine::clearPlaylist();
+}
 } // ClientEngine
 

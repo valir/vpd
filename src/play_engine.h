@@ -36,6 +36,9 @@ void play(int pos);
 // playlist commands
 void add(const std::string& uri);
 void enumeratePlaylist(enumPlaylistFn fn);
+void clearPlaylist();
+
+// status commands
 const Player::Status& status();
 
 } // namespace PlayEngine

@@ -193,7 +193,7 @@ std::string vpd_status_line(socket_ptr socket, const char* prop) {
             break;
         if (si.substr(0, strlen(prop)) == prop) {
             result = si;
-            break;
+            // do not break, but continue reading until OK is received
         }
     }
     BOOST_REQUIRE_MESSAGE(!result.empty(), "cannot find the \"" << prop << ":\" line in the vpd status output");

@@ -211,6 +211,11 @@ void enumeratePlaylist(enumPlaylistFn fn) {
     Player::playlist().enumerate(fn);
 }
 
+void clearPlaylist() {
+    Player::playlist().items_.clear();
+    // TODO also stop playing
+}
+
 const Player::Status& status() {
     return Player::status();
 }
