@@ -1,0 +1,9 @@
+
+= vpd news
+Check project progress here
+
+=== vpd project started
+Posted: December 3, 2014
+
+The first running executable seen the light, aiming to be my future video player :-)
+

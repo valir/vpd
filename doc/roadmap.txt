@@ -1,0 +1,14 @@
+
+= Roadmap
+
+== v0.1
+
+* implement these playlist commands
+** add
+** clear
+** playlistinfo
+* play and stop a video
+
+== v0.2
+
+

@@ -1,0 +1,13 @@
+
+= Why start a new video player?
+
+Well, vpd is not really a video player. Instead, it uses well established and awesome vlc to render the videos. However,
+vlc lacks a remote capable daemon mode, and that's vpd's job!
+
+= Why did you start this project?
+
+I started this project when I realized that I cannot find a suitable media center capable of playing nicely with my
+HiFiBerry and with the Raspberry PI B+'s video decoding hardware at the same time. vlc actually can do that but it's
+remote capabilities are somewhat limited. Besides, I recently switched to mpd and find it's capabilities really awesome.
+I wanted the same for my video streams and files.
+

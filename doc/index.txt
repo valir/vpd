@@ -1,0 +1,48 @@
+
+= vpd home page
+vpd is a a lightweight server-side application for playing videos. It relies on vlc for video rendering, while being
+controlled by its network protocol.
+
+== News
+
+=== vpd.io domain created
+Posted: February 02, 2015
+
+OK, I decided to get a shiny new domain for vpd and fortunately the .io domain was readily available! I took no chance
+and reserved it right away.
+
+link:news[Read more news...]
+
+== Installing
+
+No release is available for the moment. You may consider installing from the sources.
+
+== Getting help
+
+* Read the documentation and the manpage
+* Check the log file (--verbose option)
+* Make sure you have the latest version of vpd
+* Submit a bug report
+* Contact us on IRC
+
+== Contributing
+
+vpd is a new project. Help is definitely needed in the following areas:
+- testing and bug reporting (also, whishes are walcome)
+- translating this website
+- adding an android remote
+- adding an iPhone/iOS remote
+- adding an Windows Phone remote
+- adding an ncurses Linux client
+- adding a graphical Linux client
+- adding a windows client
+- creating the documentation
+- spreading the news
+
+If you think you can help in any of these areas, drop me a line and we'll arrange for it to happen!
+
+== Donating
+
+I'm doing this project in my free/spare time. I also run a custom domain and a small server for the web hosting. If
+you'd like me to put more time in it, then why not consider donating? Any amount is welcome!
+
