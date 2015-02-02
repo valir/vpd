@@ -25,36 +25,16 @@
 
 #include <thread>
 #include <future>
+#include <list>
 #include <boost/log/trivial.hpp>
-#include <boost/process.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/system/error_code.hpp>
-#include <boost/array.hpp>
 
 namespace PlayEngine {
 
-namespace bp = boost::process;
 namespace io = boost::asio;
 using socket_t = io::ip::tcp::socket;
-
-struct StdOutNullDevice
-{
-    StdOutNullDevice(bp::pipe &p) : p_(p) {
-        p_.async_read_some(io::buffer(iobuffer_), *this);
-    }
-    void operator()(const boost::system::error_code &ec, std::size_t bytes) {
-        if (!ec)
-        {
-            // simply eat those verbose output
-            p_.async_read_some(io::buffer(iobuffer_), *this);
-        } else {
-            BOOST_LOG_TRIVIAL(error) << "Error signaled in the StdOutNullDevice: " << ec.message();
-        }
-    }
-    bp::pipe &p_;
-    boost::array<char, 65536> iobuffer_;
-};
 
 io::io_service ioservice_;
 io::ip::tcp::acceptor acceptor(ioservice_);
@@ -136,75 +116,13 @@ int start (const RuntimeConfig &config) {
     return 0;
 }
 
-struct PlayerExec : public std::enable_shared_from_this<PlayerExec>
-{
-    using args_vector = std::vector<string>;
-    PlayerExec(std::string execName, args_vector&& args = args_vector()) :
-        execArgs_(args)
-    {
-        execPath_ = bp::find_executable_in_path(execName);
-        if (execPath_.length() == 0) {
-            BOOST_LOG_TRIVIAL(error) << "Cannot find " << execName << "executable!";
-            setInvalid();
-        } else {
-            BOOST_LOG_TRIVIAL(debug) << "found " << execPath_;
-            ctx_.process_name = execName;
-        }
-    }
-    void setInvalid() { valid_ = false; }
-    void start() {
-        child_ = std::make_shared<bp::child>(bp::create_child(execPath_, execArgs_, ctx_));
-        BOOST_LOG_TRIVIAL(debug) << ctx_.process_name << "process started. standby for clvlc launch...";
-    }
-private:
-    bool valid_;
-    string  execPath_;
-    std::vector<string> execArgs_;
-    bp::context ctx_;
-    using child_ptr = std::shared_ptr<bp::child>;
-    child_ptr child_;
-};
-
-
-int playSopcast(std::string uri) {
-    using namespace std::literals;
-    // TODO this should be configurable as it platform dependant
-    PlayerExec sopcast("sp-sc-auth", { "sop://broker.sopcast.com:3912/151929", "1234", "12345" });// play protv
-
-
-    // TODO let the cvlc exec name be configurable
-    PlayerExec vlc("cvlc", {
-        // TODO add an ifdef here to insert these two arguments on the RPI platform
-        //        "--vout", "omxil_vout",
-        "http://localhost:12345/tv.asf"
-    });
-
-    sopcast.start();
-    std::this_thread::sleep_for(5s);
-    vlc.start();
-
-    return 0;
-}
-
-void play(std::string uri) {
-    // NOTE should we use cpp-netlib for URI parsing ?
-    auto proto_end = uri.find_first_of(':');
-    if (proto_end == std::string::npos) {
-        return;
-    }
-    std::string proto = uri.substr(0, proto_end-1);
-    if (proto == "sop") {
-        playSopcast(uri);
-    } else {
-
-    }
-}
 
 void play(int pos) {
+    Player::play();
 }
 
 void stop() {
-    // TODO
+    Player::stop();
 }
 
 void add(const std::string &uri) {

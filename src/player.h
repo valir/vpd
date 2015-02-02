@@ -49,5 +49,8 @@ struct Status
 Playlist& playlist();
 const Status& status();
 
+void play();
+void stop();
+
 } // namespace
 #endif // PLAYER_H

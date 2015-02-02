@@ -25,10 +25,11 @@
 
 struct PlaylistItem
 {
-    explicit PlaylistItem(std::string uri) :
+    explicit PlaylistItem(std::string uri = "") :
         uri_(uri)
         , id_(-1)
     {}
+    bool empty() const noexcept { return uri_.empty(); }
     std::string uri_;
     std::string name_;
     int id_;
@@ -38,15 +39,23 @@ using enumPlaylistFn = std::function< void(const PlaylistItem&) >;
 
 struct Playlist
 {
-    Playlist() : version_(0) {}
+    Playlist() : version_(0), current_(0) {}
     void add(std::string uri) {
         BOOST_LOG_TRIVIAL(debug) << "Playlist: adding URI: " << uri;
         items_.emplace_back(uri);
         version_++;
     }
+    PlaylistItem next() noexcept {
+        if (items_.empty() || current_ == items_.size()) {
+            return PlaylistItem();
+        } else {
+            return items_[current_++];
+        }
+    }
     void enumerate(enumPlaylistFn fn) const;
     std::vector<PlaylistItem> items_;
     uint32_t version_;
+    size_t current_;
 };
 
 
