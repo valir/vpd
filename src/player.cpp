@@ -91,7 +91,13 @@ struct PlayerExec : public std::enable_shared_from_this<PlayerExec>
     }
     void kill() {
         BOOST_LOG_TRIVIAL(info) << "killing process " << child_->get_id() << " (was " << execPath_ << ")";
-        child_->terminate(true);
+        try {
+            child_->terminate(false);
+            child_->wait();
+            // FIXME find out why and how the exception is thrown upon killing one of these processes
+        } catch (boost::system::system_error ex) {
+            BOOST_LOG_TRIVIAL(warning) << "exception caucht when attempting to kill the process :" << ex.code() << ": " << ex.what();
+        }
     }
 private:
     bool valid_;
@@ -169,6 +175,7 @@ void stop() {
     for (PlayerExecPtr player: players_) {
         player->kill();
     }
+    players_.clear();
 }
 
 } // namespace
