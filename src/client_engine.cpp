@@ -163,6 +163,10 @@ START_CMD_NOARGS(play)
     session->play(pos);
     RETURN_OK()
 END_CMD()
+START_CMD_NOARGS(stop)
+    session->stop();
+    RETURN_OK()
+END_CMD()
 START_CMD_NOARGS(clear)
     session->clear();
     RETURN_OK()
@@ -212,6 +216,7 @@ bool initKnownFactories() {
     REGISTER_CMD(status)
     REGISTER_CMD(close)
     REGISTER_CMD(play)
+    REGISTER_CMD(stop)
     REGISTER_CMD(clear)
     REGISTER_CMD(add)
     REGISTER_CMD(playlistinfo)
@@ -313,6 +318,13 @@ void ClientSession::play(int pos) {
     socket_.get_io_service().post(
         [self = shared_from_this(), pos]() {
             PlayEngine::play(pos);
+        });
+}
+
+void ClientSession::stop() {
+    socket_.get_io_service().post(
+        []() {
+            PlayEngine::stop();
         });
 }
 

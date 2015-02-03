@@ -72,7 +72,7 @@ struct StdOutNullDevice
 struct PlayerExec : public std::enable_shared_from_this<PlayerExec>
 {
     using args_vector = std::vector<std::string>;
-    PlayerExec(std::string execName, args_vector&& args = args_vector()) :
+    PlayerExec(std::string execName, args_vector args = args_vector()) :
         execArgs_(args)
     {
         execPath_ = bp::find_executable_in_path(execName);
@@ -89,6 +89,10 @@ struct PlayerExec : public std::enable_shared_from_this<PlayerExec>
         child_ = std::make_shared<bp::child>(bp::create_child(execPath_, execArgs_, ctx_));
         BOOST_LOG_TRIVIAL(debug) << ctx_.process_name << "process started. standby for clvlc launch...";
     }
+    void kill() {
+        BOOST_LOG_TRIVIAL(info) << "killing process " << child_->get_id() << " (was " << execPath_ << ")";
+        child_->terminate(true);
+    }
 private:
     bool valid_;
     std::string  execPath_;
@@ -98,24 +102,31 @@ private:
     child_ptr child_;
 };
 
+using PlayerExecPtr = std::shared_ptr<PlayerExec>;
+
+std::vector<PlayerExecPtr> players_;
 
 int playSopcast(std::string uri) {
     using namespace std::literals;
     // TODO this should be configurable as it platform dependant
     // protv uri : "sop://broker.sopcast.com:3912/151929"
-    PlayerExec sopcast("sp-sc-auth", { uri, "1234", "12345" });
+    PlayerExec::args_vector args = { uri, "1234", "12345" };
+    PlayerExecPtr sopcast = std::make_shared<PlayerExec>("sp-sc-auth", args);
+    players_.push_back(sopcast);
 
 
-    // TODO let the cvlc exec name be configurable
-    PlayerExec vlc("cvlc", {
+    args = {
         // TODO add an ifdef here to insert these two arguments on the RPI platform
         //        "--vout", "omxil_vout",
         "http://localhost:12345/tv.asf"
-    });
+    };
+    // TODO let the cvlc exec name be configurable
+    PlayerExecPtr vlc = std::make_shared<PlayerExec>("cvlc", args);
+    players_.push_back(vlc);
 
-    sopcast.start();
+    sopcast->start();
     std::this_thread::sleep_for(5s);
-    vlc.start();
+    vlc->start();
 
     return 0;
 }
@@ -155,7 +166,9 @@ void play() {
 }
 
 void stop() {
-
+    for (PlayerExecPtr player: players_) {
+        player->kill();
+    }
 }
 
 } // namespace
