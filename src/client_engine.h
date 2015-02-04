@@ -45,6 +45,7 @@ enum class Error : std::size_t {
     TooManyArgs,
     MissingParameter,
     InvalidUri,
+    InvalidFilename,
     LastError
 };
 
@@ -126,6 +127,7 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
     void enumeratePlaylist(enumPlaylistFn fn);
     const Player::Status& status() const;
     void clear() const;
+    void save(const std::string& filename);
 private:
     void readNextCommand();
     void handleMessage(ClientMessagePtr msg);

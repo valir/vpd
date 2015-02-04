@@ -39,6 +39,9 @@ void add(const std::string& uri);
 void enumeratePlaylist(enumPlaylistFn fn);
 void clearPlaylist();
 
+// playlist persistence commands
+void save(const std::string& filename);
+
 // status commands
 const Player::Status& status();
 

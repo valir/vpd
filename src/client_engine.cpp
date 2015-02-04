@@ -23,6 +23,7 @@
 #include "play_engine.h"
 
 #include <boost/log/trivial.hpp>
+#include <boost/filesystem/path.hpp>
 #include <thread>
 #include <chrono>
 #include <iostream>
@@ -40,7 +41,8 @@ const char* errorMessages_[static_cast<std::size_t>(Error::LastError)] = {
     "command not implemented",
     "too many arguments",
     "missing parameter",
-    "the given URI is invalid"
+    "the given URI is invalid",
+    "the given file name is invalid"
 };
 
 std::string AckStatus::toString() const {
@@ -107,6 +109,15 @@ using ClientCommandPtr = std::shared_ptr<ClientCommand>;
         return AckStatus::fromError(cmd->opcode(), Error::TooManyArgs);\
     }
 
+#define START_CMD_ARGS1(cmdname) \
+    START_CMD(cmdname)\
+    if (cmd->params().size() ==0) {\
+        return AckStatus::fromError(cmd->opcode(), Error::MissingParameter);\
+    }\
+    if (cmd->params().size() >1) {\
+        return AckStatus::fromError(cmd->opcode(), Error::TooManyArgs);\
+    }
+
 #define END_CMD() \
                     } );\
         };
@@ -157,9 +168,9 @@ START_CMD_NOARGS(status)
 END_CMD()
 START_CMD_NOARGS(play)
     int pos = 0;
-    if (cmd->params().size() >0) {
-        pos = std::stoi(cmd->params()[0]);
-    }
+    // if (cmd->params().size() >0) {
+    //     pos = std::stoi(cmd->params()[0]);
+    // }
     session->play(pos);
     RETURN_OK()
 END_CMD()
@@ -171,13 +182,7 @@ START_CMD_NOARGS(clear)
     session->clear();
     RETURN_OK()
 END_CMD()
-START_CMD(add)
-    if (cmd->params().size() >1) {
-        return AckStatus::fromError(cmd->opcode(), Error::TooManyArgs);
-    }
-    if (cmd->params().size() == 0) {
-        return AckStatus::fromError(cmd->opcode(), Error::MissingParameter);
-    }
+START_CMD_ARGS1(add)
     std::string uri = cmd->params()[0];
     if (!session->isValidUri(uri)) {
         return AckStatus::fromError(cmd->opcode(), Error::InvalidUri);
@@ -208,6 +213,16 @@ START_CMD(playlistinfo)
     return AckStatus::ok(results);
 END_CMD()
 
+START_CMD_ARGS1(save)
+    std::string listname = cmd->params()[0];
+    if (!boost::filesystem::portable_name(listname)) {
+        BOOST_LOG_TRIVIAL(debug) << "invalid name give for playlist " << listname;
+        return AckStatus::fromError(cmd->opcode(), Error::InvalidFilename);
+    }
+    session->save(cmd->params()[0]);
+    RETURN_OK()
+END_CMD()
+
 using Factory_t = std::function<ClientCommandPtr(ClientMessagePtr)>;
 std::map< std::string, Factory_t > knownFactories;
 
@@ -220,6 +235,7 @@ bool initKnownFactories() {
     REGISTER_CMD(clear)
     REGISTER_CMD(add)
     REGISTER_CMD(playlistinfo)
+    REGISTER_CMD(save)
     return true;
 };
 
@@ -361,6 +377,13 @@ const Player::Status& ClientSession::status() const {
 
 void ClientSession::clear() const {
     PlayEngine::clearPlaylist();
+}
+
+void ClientSession::save(const std::string& filename) {
+    socket_.get_io_service().post(
+        [self = shared_from_this(), filename](){
+            PlayEngine::save(filename);
+        });
 }
 } // ClientEngine
 

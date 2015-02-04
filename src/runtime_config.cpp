@@ -47,9 +47,10 @@ bool try_read_config_file(string config_file,
         return false;
     ifstream ifs(config_file.c_str());
     if (!ifs) {
-        BOOST_LOG_TRIVIAL(debug) << "cannot open configuration file: " << config_file << std::endl;
+        BOOST_LOG_TRIVIAL(debug) << "cannot open configuration file: " << config_file << endl;
         return false;
     } else {
+        BOOST_LOG_TRIVIAL(info) << "using configuration file " << config_file << endl;
         store(parse_config_file(ifs, opts_config), vm);
         notify(vm);
     }

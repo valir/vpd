@@ -39,11 +39,14 @@
 #include <boost/asio.hpp>
 #include <boost/process.hpp>
 #include <boost/test/included/unit_test.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include "config.h"
 
 namespace io = boost::asio;
 namespace bp = boost::process;
+namespace fs = boost::filesystem;
 using namespace std;
 using socket_t = io::ip::tcp::socket;
 using socket_ptr = std::shared_ptr< socket_t >;
@@ -100,50 +103,43 @@ struct AsioSetup {
 
         int existing_vpd_id = getProcIdByName("vpd");
         if (-1 == existing_vpd_id) {
-            std::thread vpd = std::thread(
-                    [this]() {
-                        BOOST_TEST_MESSAGE("launching VPD...");
-                        auto execPath = "../vpd";
-                        // auto execArgs = {
-                        // };
-                        //vlc.ctx_.process_name = "cvlc";
-
-                        bp::child vpd = bp::create_child(execPath);
-                        vpd_pid_ = vpd.get_id();
-                        bp::status vpdstatus(io_service_);
-                        vpdstatus.async_wait(vpd.get_id(),
-                            [](const boost::system::error_code &ec, int exit_code){
-                               BOOST_TEST_MESSAGE("VPD exit_code:" << exit_code);
-                            });
-                        BOOST_TEST_MESSAGE("VPD thread exit");
-                    });
+            BOOST_TEST_MESSAGE("launching VPD...");
+            // FIXME use a cmake variable or something else to avoir hardcoding this
+            auto execPath = "../src/vpd";
+            auto configPath = createTestConfigFile();
+            bp::context ctx;
+            vector<string> args = { "--config", configPath };
+            vpd_ = std::make_shared<bp::child>(bp::create_child(execPath, args, ctx));
+            vpd_pid_ = vpd_->get_id();
+            BOOST_TEST_MESSAGE("VPD thread exit");
             // wait for the vpd process start
             // FIXME we should wait more reliably for VPD start, as maybe in the future
             // it'll take longer to initialize
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            vpd.detach();
         } else {
             BOOST_TEST_MESSAGE("using existing VPD pid: " << existing_vpd_id);
         }
-        // asio_thread_ = std::thread(
-        //         [this]() {
-        //             BOOST_TEST_MESSAGE("Starting asio thread");
-        //             io::io_service::work work(io_service_);
-        //             BOOST_TEST_MESSAGE("asio thread stop");
-        //         });
     }
     ~AsioSetup() {
         BOOST_TEST_MESSAGE("teardown test fixture");
-        io_service_.stop();
-        // FIXME figure out how to terminate the child using bp::process:terminate
-        if (vpd_pid_ >0)
-            kill(vpd_pid_, SIGKILL);
+        vpd_->terminate();
+        auto exit_code = vpd_->wait();
+        BOOST_TEST_MESSAGE("VPD exit_code:" << exit_code);
+    }
+
+    string createTestConfigFile()
+    {
+        fs::path p(fs::current_path());
+        p /= "vpd_test_rc";
+        ofstream ofs(p.string(), ofstream::out | ofstream::trunc);
+        ofs << "workdir = " << fs::current_path();
+        return p.string();
     }
 
     io::io_service io_service_;
     io::ip::tcp::resolver::iterator epi_;
     int vpd_pid_;
-    std::thread asio_thread_;
+    std::shared_ptr<bp::child> vpd_;
 };
 
 socket_ptr connect_to_server(io::io_service& io_service, io::ip::tcp::resolver::iterator& epi, bool eatHello =true) {
