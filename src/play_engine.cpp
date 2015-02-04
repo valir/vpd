@@ -149,22 +149,31 @@ namespace PlayEngine {
     fs::path workdir() {
         boost::system::error_code ec;
         if (!fs::exists(RuntimeConfig::workdir_, ec)) {
-            BOOST_LOG_TRIVIAL(debug) << "workdir not found (" << ec.message() << ")";
-            fs::create_directories(RuntimeConfig::workdir_);
-            // let it throw an crash the program, as that's not an acceptable situation
+            BOOST_LOG_TRIVIAL(debug) << "workdir " << RuntimeConfig::workdir_ << " not found (" << ec.message() << "). Creating it...";
+            ec.clear();
+            fs::create_directories(RuntimeConfig::workdir_, ec);
+            // let the program crash here, as that's not an acceptable situation
             // not to be able to create the working directory
+            if (ec) {
+                BOOST_LOG_TRIVIAL(error) << "cannot create working directory " << RuntimeConfig::workdir_ << " cause: " << ec.message();
+                exit(EXIT_FAILURE);
+            }
         }
         return fs::path(RuntimeConfig::workdir_);
     }
 
     fs::path playlistsPath() {
-        boost::system::error_code ec;
         auto p = workdir();
         p /= "playlists";
         if (!fs::exists(p)) {
-            BOOST_LOG_TRIVIAL(debug) << "creating directory " << p;
-            fs::create_directories(p);
+            BOOST_LOG_TRIVIAL(debug) << "creating directory " << p.string();
+            boost::system::error_code ec;
+            fs::create_directories(p, ec);
             // here also, let it crash!
+            if (ec) {
+                BOOST_LOG_TRIVIAL(error) << "cannot create playlists dir " << p.string();
+                exit(EXIT_FAILURE);
+            }
         }
         return p;
     }
@@ -174,7 +183,7 @@ namespace PlayEngine {
         auto p = playlistsPath() /= filename;
         p += ".m3u";
         if (fs::exists(p)) {
-            BOOST_LOG_TRIVIAL(warning) << "replacing playlist " << p;
+            BOOST_LOG_TRIVIAL(warning) << "replacing playlist " << p.string();
         }
 
         ofstream ofs(p.string(), std::ofstream::out | std::ofstream::trunc);

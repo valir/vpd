@@ -96,7 +96,7 @@ int getProcIdByName(string procName)
 }
 
 struct AsioSetup {
-    AsioSetup() {
+    AsioSetup() : own_vpd_(false) {
         BOOST_TEST_MESSAGE("setup test fixture");
         io::ip::tcp::resolver resolver(io_service_);
         epi_ = resolver.resolve({"127.0.0.1", "7700"});
@@ -115,27 +115,40 @@ struct AsioSetup {
             // wait for the vpd process start
             // FIXME we should wait more reliably for VPD start, as maybe in the future
             // it'll take longer to initialize
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            own_vpd_ = true;
         } else {
             BOOST_TEST_MESSAGE("using existing VPD pid: " << existing_vpd_id);
+            own_vpd_ = false;
         }
     }
+
     ~AsioSetup() {
         BOOST_TEST_MESSAGE("teardown test fixture");
-        vpd_->terminate();
-        auto exit_code = vpd_->wait();
-        BOOST_TEST_MESSAGE("VPD exit_code:" << exit_code);
+        if (own_vpd_) {
+            vpd_->terminate();
+            auto exit_code = vpd_->wait();
+            BOOST_TEST_MESSAGE("VPD exit_code:" << exit_code);
+            if (fs::exists(workPath())) {
+                fs::remove_all(workPath());
+            }
+        }
     }
 
+    fs::path workPath() const { return fs::current_path() /= "work"; }
     string createTestConfigFile()
     {
         fs::path p(fs::current_path());
         p /= "vpd_test_rc";
         ofstream ofs(p.string(), ofstream::out | ofstream::trunc);
-        ofs << "workdir = " << fs::current_path();
+
+        auto workp = workPath();
+        ofs << "workdir = ";
+        ofs.write(workp.string().c_str(), workp.string().size());
         return p.string();
     }
 
+    bool own_vpd_;
     io::io_service io_service_;
     io::ip::tcp::resolver::iterator epi_;
     int vpd_pid_;
