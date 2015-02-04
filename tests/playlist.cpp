@@ -86,7 +86,6 @@ BOOST_AUTO_TEST_CASE( playlist_cmd ) {
 BOOST_AUTO_TEST_CASE( playlist_persist ) {
     auto socket = connect_to_server(io_service_, epi_);
 
-    // TODO store the playlist version here and check later that it gets increased by successive modifications
     const char* clearcmd = "clear\r\n";
     send_cmd(socket, clearcmd);
     BOOST_REQUIRE_EQUAL(recv_status(socket), "OK");
