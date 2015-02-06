@@ -209,4 +209,29 @@ std::string vpd_status_line(socket_ptr socket, const char* prop) {
     return result;
 }
 
+const char* clearcmd = "clear\r\n";
+const char* playlistinfocmd = "playlistinfo\r\n";
+const char* loadcmd = "load\r\n";
+const char* listplaylistscmd = "listplaylists\r\n";
+
+const char* attr_playlistlength = "playlistlength";
+const char* attr_file = "file";
+
+inline void require_attr(const std::string& info, std::string attr) {
+    attr += ':';
+    BOOST_REQUIRE(info.substr(0, attr.size()) == attr);
+}
+
+inline void require_attr_value(const std::string& info, std::string attr, std::string required_value) {
+    attr += ':';
+    BOOST_REQUIRE(info.substr(attr.size() + 1) == required_value);
+}
+
+inline void require_ok(const std::string& info) {
+    BOOST_REQUIRE(info == "OK");
+}
+
+inline void require_ok_status(socket_ptr socket) {
+    require_ok(recv_status(socket));
+}
 #endif // ASIO_SETUP_H
