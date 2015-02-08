@@ -50,10 +50,13 @@ void Playlist::save(fs::path path, const std::string& filename) {
 
 void PlaylistInfo::enumeratePlaylists(const fs::path& playlistsPath, EnumPlaylistsFn fn) {
     assert(fs::exists(playlistsPath));
-    for (auto file : playlistsPath) {
-        // NOTE: I don't think we need to filter the m3u files here
-        // was we own the containing directory
-        PlaylistInfo info(file);
-        fn(info);
+    fs::directory_iterator end_iter;
+    for ( fs::directory_iterator it(playlistsPath); it != end_iter; it++ ) {
+        if (fs::is_regular_file(it->path())) {
+            // NOTE: I don't think we need to filter the m3u files here
+            // was we own the containing directory
+            PlaylistInfo info(it->path());
+            fn(info);
+        }
     }
 }

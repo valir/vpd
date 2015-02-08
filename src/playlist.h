@@ -72,7 +72,7 @@ struct PlaylistInfo
 
     static void enumeratePlaylists(const fs::path &playlistsPath, EnumPlaylistsFn fn);
 
-    std::string name() const { return path_.filename().string(); }
+    std::string name() const { return path_.stem().string(); }
     std::time_t lastModified() const { return fs::last_write_time(path_); }
 };
 

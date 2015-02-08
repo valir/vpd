@@ -229,8 +229,8 @@ START_CMD_NOARGS(listplaylists)
     int pos = 0;
     session->enumeratePlaylists(
             [&](const PlaylistInfo &info) {
-                os << "playlist: " << info.name();
-                os << "Last-Modified: " << info.lastModified();
+                writeProp(os, "playlist", info.name());
+                writeProp(os, "Last-Modified", info.lastModified());
             }
         );
     auto results = obuf.str();
