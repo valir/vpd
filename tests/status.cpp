@@ -25,29 +25,23 @@
 
 BOOST_FIXTURE_TEST_SUITE(s, AsioSetup)
 
-void check_prop(socket_ptr socket, const char *propname) {
-    std::string info = recv_status(socket);
-    std::string prop = propname;
-    BOOST_REQUIRE_MESSAGE(info.compare(0, prop.length(), prop) == 0, "cannot find '" << prop << "' in vpd status output");
-}
-
 BOOST_AUTO_TEST_CASE( status_cmd ) {
     auto socket = connect_to_server(io_service_, epi_);
     const char* cmdstatus = "status\r\n";
     send_cmd(socket, cmdstatus);
-    check_prop(socket, "volume");
-    check_prop(socket, "repeat");
-    check_prop(socket, "random");
-    check_prop(socket, "single");
-    check_prop(socket, "consume");
-    check_prop(socket, "playlist");
-    check_prop(socket, "playlistlength");
-    check_prop(socket, "videoclip");
-    check_prop(socket, "videoclipid");
-    check_prop(socket, "time");
-    check_prop(socket, "elapsed");
-    check_prop(socket, "nextvideoclip");
-    check_prop(socket, "nextvideoid");
+    REQUIRE_ATTR(recv_status(socket), "volume");
+    REQUIRE_ATTR(recv_status(socket), "repeat");
+    REQUIRE_ATTR(recv_status(socket), "random");
+    REQUIRE_ATTR(recv_status(socket), "single");
+    REQUIRE_ATTR(recv_status(socket), "consume");
+    REQUIRE_ATTR(recv_status(socket), "playlist");
+    REQUIRE_ATTR(recv_status(socket), "playlistlength");
+    REQUIRE_ATTR(recv_status(socket), "videoclip");
+    REQUIRE_ATTR(recv_status(socket), "videoclipid");
+    REQUIRE_ATTR(recv_status(socket), "time");
+    REQUIRE_ATTR(recv_status(socket), "elapsed");
+    REQUIRE_ATTR(recv_status(socket), "nextvideoclip");
+    REQUIRE_ATTR(recv_status(socket), "nextvideoid");
     std::string info = recv_status(socket);
     BOOST_REQUIRE_EQUAL(info, "OK");
 }

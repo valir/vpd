@@ -26,6 +26,9 @@
 
 BOOST_FIXTURE_TEST_SUITE(s, AsioSetup)
 
+#define REQUIRE_OK(info) BOOST_REQUIRE(info == "OK");
+#define REQUIRE_OK_STATUS(socket) REQUIRE_OK(recv_status(socket));
+
 BOOST_AUTO_TEST_CASE( playlist_cmd ) {
     auto socket = connect_to_server(io_service_, epi_);
 
@@ -36,7 +39,7 @@ BOOST_AUTO_TEST_CASE( playlist_cmd ) {
     auto uri_protv = "sop://broker.sopcast.com:3912/149252";
     std::string cmdadd = std::string("add ").append(uri_protv).append("\r\n"); // this is protv channel from romania
     send_cmd(socket, cmdadd);
-    require_ok_status(socket);
+    REQUIRE_OK_STATUS(socket);
 
     { // test the case when no params are given
         std::string cmdadd_noparams = "add\r\n";
@@ -60,39 +63,37 @@ BOOST_AUTO_TEST_CASE( playlist_cmd ) {
     }
 
     send_cmd(socket, playlistinfocmd);
-
     std::string info = recv_status(socket);
-    require_attr(info, attr_file);
-    require_attr_value(info, attr_file, uri_protv);
-    require_ok_status(socket);
+    REQUIRE_ATTR(info, attr_file);
+    REQUIRE_ATTR_VALUE(info, attr_file, uri_protv);
+    REQUIRE_ATTR(recv_status(socket), attr_pos);
+    REQUIRE_OK_STATUS(socket);
 
     // info = recv_status(socket);
     // BOOST_REQUIRE(info == "Id: 0");
 
-    require_ok_status(socket);
-
     info = vpd_status_line(socket, "playlistlength");
-    require_attr(info, attr_playlistlength);
-    require_attr_value(info, attr_playlistlength, "1");
+    REQUIRE_ATTR(info, attr_playlistlength);
+    REQUIRE_ATTR_VALUE(info, attr_playlistlength, "1");
 
     send_cmd(socket, clearcmd);
-    require_ok_status(socket);
+    REQUIRE_OK_STATUS(socket);
 }
 
 BOOST_AUTO_TEST_CASE( playlist_persist ) {
     auto socket = connect_to_server(io_service_, epi_);
 
     send_cmd(socket, clearcmd);
-    require_ok_status(socket);
+    REQUIRE_OK_STATUS(socket);
 
     auto uri_protv = "sop://broker.sopcast.com:3912/149252";
     std::string cmdadd = std::string("add ").append(uri_protv).append("\r\n"); // this is protv channel from romania
     send_cmd(socket, cmdadd);
-    require_ok_status(socket);
+    REQUIRE_OK_STATUS(socket);
 
     const char* savecmd = "save test_list\r\n";
     send_cmd(socket, savecmd);
-    require_ok_status(socket);
+    REQUIRE_OK_STATUS(socket);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500)); // vpd creates the file asynchronously, so wait a bit here
     fs::path plpath = (workPath() /= "playlists") /= "test_list.m3u";
@@ -104,7 +105,7 @@ BOOST_AUTO_TEST_CASE( playlist_persist ) {
 
     // now clear the playlist, the reload it and check it again
     send_cmd(socket, clearcmd);
-    require_ok_status(socket);
+    REQUIRE_OK_STATUS(socket);
 
     send_cmd(socket, listplaylistscmd);
     auto info_line = recv_status(socket);
@@ -113,17 +114,17 @@ BOOST_AUTO_TEST_CASE( playlist_persist ) {
     info_line = recv_status(socket);
     const char* attr_last_modified = "Last-Modified:";
     BOOST_REQUIRE(info_line.substr(0, strlen(attr_last_modified)) == attr_last_modified);
-    require_ok_status(socket);
+    REQUIRE_OK_STATUS(socket);
 
     send_cmd(socket, loadcmd);
-    require_ok_status(socket);
+    REQUIRE_OK_STATUS(socket);
 
     {
         send_cmd(socket, playlistinfocmd);
         std::string info = recv_status(socket);
-        require_attr(info, attr_file);
-        require_attr_value(info, attr_file, uri_protv);
-        require_ok_status(socket);
+        REQUIRE_ATTR(info, attr_file);
+        REQUIRE_ATTR_VALUE(info, attr_file, uri_protv);
+        REQUIRE_OK_STATUS(socket);
     }
 }
 

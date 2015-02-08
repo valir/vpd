@@ -22,20 +22,24 @@
 #define PLAYLIST_H
 
 #include <boost/log/trivial.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
+
+namespace fs = boost::filesystem;
 
 struct PlaylistItem
 {
     explicit PlaylistItem(std::string uri = "") :
         uri_(uri)
         , id_(-1)
-    {}
+        {}
     bool empty() const noexcept { return uri_.empty(); }
     std::string uri_;
     std::string name_;
     int id_;
 };
 
-using enumPlaylistFn = std::function< void(const PlaylistItem&) >;
+using EnumPlaylistFn = std::function< void(const PlaylistItem&) >;
 
 struct Playlist
 {
@@ -52,10 +56,24 @@ struct Playlist
             return items_[current_++];
         }
     }
-    void enumerate(enumPlaylistFn fn) const;
+    void enumerate(EnumPlaylistFn fn) const;
+    void save(fs::path path, const std::string &name);
     std::vector<PlaylistItem> items_;
     uint32_t version_;
     size_t current_;
+};
+
+struct PlaylistInfo;
+using EnumPlaylistsFn = std::function< void(const PlaylistInfo&) >;
+struct PlaylistInfo
+{
+    PlaylistInfo(const fs::path &path) : path_(path) {}
+    fs::path path_;
+
+    static void enumeratePlaylists(const fs::path &playlistsPath, EnumPlaylistsFn fn);
+
+    std::string name() const { return path_.filename().string(); }
+    std::time_t lastModified() const { return fs::last_write_time(path_); }
 };
 
 

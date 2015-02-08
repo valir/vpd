@@ -37,6 +37,8 @@
 #include <fstream>
 #include <utility>
 #include <boost/asio.hpp>
+#include <boost/date_time/time_duration.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/process.hpp>
 #include <boost/test/included/unit_test.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -47,6 +49,7 @@
 namespace io = boost::asio;
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
+namespace t = boost::posix_time;
 using namespace std;
 using socket_t = io::ip::tcp::socket;
 using socket_ptr = std::shared_ptr< socket_t >;
@@ -148,66 +151,83 @@ struct AsioSetup {
         return p.string();
     }
 
+    void send_cmd(socket_ptr socket, std::string cmd) {
+        BOOST_REQUIRE(cmd.substr(cmd.length() -2) == "\r\n");
+        boost::system::error_code ec;
+        BOOST_MESSAGE(">> SENDING " << cmd);
+        auto bytes = io::write(*socket, io::buffer(cmd), ec);
+        BOOST_REQUIRE(!ec);
+        BOOST_REQUIRE(bytes == cmd.size());
+    }
+
+    std::string recv_status(socket_ptr socket) {
+        io::deadline_timer timeout(io_service_);
+        timeout.expires_from_now(t::seconds(10));
+        timeout.async_wait([&](boost::system::error_code ec) {
+                if (!ec) {
+                    BOOST_MESSAGE("deadline expired!");
+                    socket->close(ec);
+                }
+            });
+        boost::system::error_code ec = boost::asio::error::would_block;
+        size_t bytes =0;
+        io::async_read_until(*socket, data_, "\r\n",
+            [&](boost::system::error_code compl_ec, size_t compl_bytes) {
+                ec = compl_ec;
+                bytes = compl_bytes;
+            });
+        do io_service_.run_one(); while (ec == boost::asio::error::would_block);
+        BOOST_REQUIRE_MESSAGE(!ec, ec.message());
+        BOOST_REQUIRE(bytes >0);
+        std::istream is(&data_);
+        std::string result;
+        std::getline(is, result);
+        BOOST_REQUIRE(result.substr(result.length() -1) == "\r");
+        auto ret = result.substr(0, result.length() -1);
+        BOOST_MESSAGE("<< RECEIVED " << ret);
+        return ret;
+    }
+
+    std::string vpd_status_line(socket_ptr socket, const char* prop) {
+        const char* cmdstatus = "status\r\n";
+        send_cmd(socket, cmdstatus);
+        std::string result;
+        for (;;) {
+            std::string si = recv_status(socket);
+            if (si == "OK")
+                break;
+            if (si.substr(0, strlen(prop)) == prop) {
+                result = si;
+                // do not break, but continue reading until OK is received
+            }
+        }
+        BOOST_REQUIRE_MESSAGE(!result.empty(), "cannot find the \"" << prop << ":\" line in the vpd status output");
+        return result;
+    }
+    socket_ptr connect_to_server(io::io_service& io_service, io::ip::tcp::resolver::iterator& epi, bool eatHello =true) {
+        auto socket = std::make_shared< socket_t >(io_service);
+        boost::system::error_code ec;
+        socket->connect(*epi, ec);
+        BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
+        BOOST_CHECK(!ec);
+        if (eatHello) {
+            io::streambuf data;
+            auto bytes = io::read_until(*socket, data, "\r\n", ec);
+            BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
+            BOOST_REQUIRE(!ec);
+        }
+        return socket;
+    }
     bool own_vpd_;
     io::io_service io_service_;
     io::ip::tcp::resolver::iterator epi_;
     int vpd_pid_;
     std::shared_ptr<bp::child> vpd_;
+    io::streambuf data_;
 };
 
-socket_ptr connect_to_server(io::io_service& io_service, io::ip::tcp::resolver::iterator& epi, bool eatHello =true) {
-    auto socket = std::make_shared< socket_t >(io_service);
-    boost::system::error_code ec;
-    socket->connect(*epi, ec);
-    BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
-    BOOST_CHECK(!ec);
-    if (eatHello) {
-        io::streambuf data;
-        auto bytes = io::read_until(*socket, data, "\r\n", ec);
-        BOOST_MESSAGE("socket connect error_code: " << ec.value() << ", message: " << ec.message());
-        BOOST_REQUIRE(!ec);
-    }
-    return socket;
-}
 
-void send_cmd(socket_ptr socket, std::string cmd) {
-    BOOST_REQUIRE(cmd.substr(cmd.length() -2) == "\r\n");
-    boost::system::error_code ec;
-    auto bytes = io::write(*socket, io::buffer(cmd), ec);
-    BOOST_REQUIRE(!ec);
-    BOOST_REQUIRE(bytes == cmd.size());
-}
 
-io::streambuf data;
-
-std::string recv_status(socket_ptr socket) {
-    boost::system::error_code ec;
-    auto bytes = io::read_until(*socket, data, "\r\n", ec);
-    BOOST_REQUIRE(!ec);
-    BOOST_REQUIRE(bytes >0);
-    std::istream is(&data);
-    std::string result;
-    std::getline(is, result);
-    BOOST_REQUIRE(result.substr(result.length() -1) == "\r");
-    return result.substr(0, result.length() -1);
-}
-
-std::string vpd_status_line(socket_ptr socket, const char* prop) {
-    const char* cmdstatus = "status\r\n";
-    send_cmd(socket, cmdstatus);
-    std::string result;
-    for (;;) {
-        std::string si = recv_status(socket);
-        if (si == "OK")
-            break;
-        if (si.substr(0, strlen(prop)) == prop) {
-            result = si;
-            // do not break, but continue reading until OK is received
-        }
-    }
-    BOOST_REQUIRE_MESSAGE(!result.empty(), "cannot find the \"" << prop << ":\" line in the vpd status output");
-    return result;
-}
 
 const char* clearcmd = "clear\r\n";
 const char* playlistinfocmd = "playlistinfo\r\n";
@@ -216,22 +236,21 @@ const char* listplaylistscmd = "listplaylists\r\n";
 
 const char* attr_playlistlength = "playlistlength";
 const char* attr_file = "file";
+const char* attr_pos = "Pos";
 
-inline void require_attr(const std::string& info, std::string attr) {
-    attr += ':';
-    BOOST_REQUIRE(info.substr(0, attr.size()) == attr);
+
+#define REQUIRE_ATTR(info,attr) \
+{\
+    std::string attribute(attr);\
+    attribute += ':';\
+    BOOST_REQUIRE(info.substr(0, attribute.size()) == attribute);\
 }
 
-inline void require_attr_value(const std::string& info, std::string attr, std::string required_value) {
-    attr += ':';
-    BOOST_REQUIRE(info.substr(attr.size() + 1) == required_value);
+#define REQUIRE_ATTR_VALUE(info,attr,required_value) \
+{\
+    std::string attribute(attr);\
+    attribute += ':';\
+    BOOST_REQUIRE(info.substr(attribute.size() + 1) == required_value);\
 }
 
-inline void require_ok(const std::string& info) {
-    BOOST_REQUIRE(info == "OK");
-}
-
-inline void require_ok_status(socket_ptr socket) {
-    require_ok(recv_status(socket));
-}
 #endif // ASIO_SETUP_H

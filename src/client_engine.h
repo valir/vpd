@@ -124,10 +124,11 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
     void stop();
     void add(const std::string &uri);
     bool isValidUri(const std::string &uri) const noexcept;
-    void enumeratePlaylist(enumPlaylistFn fn);
+    void enumeratePlaylist(EnumPlaylistFn fn);
     const Player::Status& status() const;
     void clear() const;
     void save(const std::string& filename);
+    void enumeratePlaylists(EnumPlaylistsFn fn);
 private:
     void readNextCommand();
     void handleMessage(ClientMessagePtr msg);

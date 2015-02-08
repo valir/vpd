@@ -223,6 +223,19 @@ START_CMD_ARGS1(save)
     RETURN_OK()
 END_CMD()
 
+START_CMD_NOARGS(listplaylists)
+    std::stringbuf obuf;
+    std::ostream os(&obuf);
+    int pos = 0;
+    session->enumeratePlaylists(
+            [&](const PlaylistInfo &info) {
+                os << "playlist: " << info.name();
+                os << "Last-Modified: " << info.lastModified();
+            }
+        );
+    auto results = obuf.str();
+    return AckStatus::ok(results);
+END_CMD()
 using Factory_t = std::function<ClientCommandPtr(ClientMessagePtr)>;
 std::map< std::string, Factory_t > knownFactories;
 
@@ -236,6 +249,7 @@ bool initKnownFactories() {
     REGISTER_CMD(add)
     REGISTER_CMD(playlistinfo)
     REGISTER_CMD(save)
+    REGISTER_CMD(listplaylists)
     return true;
 };
 
@@ -367,7 +381,7 @@ bool ClientSession::isValidUri(const std::string &uri) const noexcept {
     return true;
 }
 
-void ClientSession::enumeratePlaylist(enumPlaylistFn fn) {
+void ClientSession::enumeratePlaylist(EnumPlaylistFn fn) {
     PlayEngine::enumeratePlaylist(fn);
 }
 
@@ -384,6 +398,10 @@ void ClientSession::save(const std::string& filename) {
         [self = shared_from_this(), filename](){
             PlayEngine::save(filename);
         });
+}
+
+void ClientSession::enumeratePlaylists(EnumPlaylistsFn fn) {
+    return PlayEngine::enumeratePlaylists(fn);
 }
 } // ClientEngine
 
