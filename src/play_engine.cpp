@@ -186,5 +186,13 @@ void enumeratePlaylists(EnumPlaylistsFn fn) {
     PlaylistInfo::enumeratePlaylists(playlistsPath(), fn);
 }
 
+void load(const std::string &listname)
+{
+    PlaylistInfoPtr plinfo = PlaylistInfo::fromPath(playlistsPath(), listname);
+    if (plinfo) {
+        Player::playlist().load(*plinfo);
+    }
+}
+
 } // namespace PlayEngine
 

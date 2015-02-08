@@ -219,7 +219,7 @@ START_CMD_ARGS1(save)
         BOOST_LOG_TRIVIAL(debug) << "invalid name give for playlist " << listname;
         return AckStatus::fromError(cmd->opcode(), Error::InvalidFilename);
     }
-    session->save(cmd->params()[0]);
+    session->save(listname);
     RETURN_OK()
 END_CMD()
 
@@ -236,6 +236,16 @@ START_CMD_NOARGS(listplaylists)
     auto results = obuf.str();
     return AckStatus::ok(results);
 END_CMD()
+
+START_CMD_ARGS1(load)
+    std::string listname = cmd->params()[0];
+    if (!boost::filesystem::portable_name(listname)) {
+        BOOST_LOG_TRIVIAL(debug) << "invalid name give for playlist " << listname;
+        return AckStatus::fromError(cmd->opcode(), Error::InvalidFilename);
+    }
+    session->load(listname);
+    RETURN_OK()
+END_CMD()
 using Factory_t = std::function<ClientCommandPtr(ClientMessagePtr)>;
 std::map< std::string, Factory_t > knownFactories;
 
@@ -250,6 +260,7 @@ bool initKnownFactories() {
     REGISTER_CMD(playlistinfo)
     REGISTER_CMD(save)
     REGISTER_CMD(listplaylists)
+    REGISTER_CMD(load)
     return true;
 };
 
@@ -402,6 +413,13 @@ void ClientSession::save(const std::string& filename) {
 
 void ClientSession::enumeratePlaylists(EnumPlaylistsFn fn) {
     return PlayEngine::enumeratePlaylists(fn);
+}
+
+void ClientSession::load(const std::string& listname) {
+    socket_.get_io_service().post(
+        [self = shared_from_this(), listname](){
+            PlayEngine::load(listname);
+        });
 }
 } // ClientEngine
 

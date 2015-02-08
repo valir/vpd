@@ -231,7 +231,6 @@ struct AsioSetup {
 
 const char* clearcmd = "clear\r\n";
 const char* playlistinfocmd = "playlistinfo\r\n";
-const char* loadcmd = "load\r\n";
 const char* listplaylistscmd = "listplaylists\r\n";
 
 const char* attr_playlistlength = "playlistlength";

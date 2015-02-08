@@ -129,6 +129,7 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
     void clear() const;
     void save(const std::string& filename);
     void enumeratePlaylists(EnumPlaylistsFn fn);
+    void load(const std::string& listname);
 private:
     void readNextCommand();
     void handleMessage(ClientMessagePtr msg);

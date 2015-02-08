@@ -42,6 +42,7 @@ void clearPlaylist();
 // playlist persistence commands
 void save(const std::string& filename);
 void enumeratePlaylists(EnumPlaylistsFn fn);
+void load(const std::string& listname);
 
 // status commands
 const Player::Status& status();

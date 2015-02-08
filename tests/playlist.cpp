@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE( playlist_persist ) {
     BOOST_REQUIRE(info_line.substr(0, strlen(attr_last_modified)) == attr_last_modified);
     REQUIRE_OK_STATUS(socket);
 
-    send_cmd(socket, loadcmd);
+    send_cmd(socket, "load test_list\r\n");
     REQUIRE_OK_STATUS(socket);
 
     {
@@ -124,6 +124,8 @@ BOOST_AUTO_TEST_CASE( playlist_persist ) {
         std::string info = recv_status(socket);
         REQUIRE_ATTR(info, attr_file);
         REQUIRE_ATTR_VALUE(info, attr_file, uri_protv);
+        info = recv_status(socket);
+        REQUIRE_ATTR(info, attr_pos);
         REQUIRE_OK_STATUS(socket);
     }
 }

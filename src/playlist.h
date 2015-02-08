@@ -29,9 +29,10 @@ namespace fs = boost::filesystem;
 
 struct PlaylistItem
 {
-    explicit PlaylistItem(std::string uri = "") :
+    explicit PlaylistItem(std::string uri = "", std::string name = "") :
         uri_(uri)
         , id_(-1)
+        , name_(name)
         {}
     bool empty() const noexcept { return uri_.empty(); }
     std::string uri_;
@@ -41,14 +42,12 @@ struct PlaylistItem
 
 using EnumPlaylistFn = std::function< void(const PlaylistItem&) >;
 
+struct PlaylistInfo;
+
 struct Playlist
 {
-    Playlist() : version_(0), current_(0) {}
-    void add(std::string uri) {
-        BOOST_LOG_TRIVIAL(debug) << "Playlist: adding URI: " << uri;
-        items_.emplace_back(uri);
-        version_++;
-    }
+    Playlist() : version_(0), current_(0), dirty_(false) {}
+    void add(std::string uri);
     PlaylistItem next() noexcept {
         if (items_.empty() || current_ == items_.size()) {
             return PlaylistItem();
@@ -58,22 +57,25 @@ struct Playlist
     }
     void enumerate(EnumPlaylistFn fn) const;
     void save(fs::path path, const std::string &name);
+    void load(const PlaylistInfo& plinfo);
+
     std::vector<PlaylistItem> items_;
     uint32_t version_;
     size_t current_;
+    bool dirty_;
 };
 
-struct PlaylistInfo;
 using EnumPlaylistsFn = std::function< void(const PlaylistInfo&) >;
+using PlaylistInfoPtr = std::shared_ptr< PlaylistInfo >;
 struct PlaylistInfo
 {
     PlaylistInfo(const fs::path &path) : path_(path) {}
-    fs::path path_;
-
     static void enumeratePlaylists(const fs::path &playlistsPath, EnumPlaylistsFn fn);
+    static PlaylistInfoPtr fromPath(fs::path p, std::string name);
 
     std::string name() const { return path_.stem().string(); }
     std::time_t lastModified() const { return fs::last_write_time(path_); }
+    fs::path path_;
 };
 
 

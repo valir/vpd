@@ -25,6 +25,16 @@
 #include <fstream>
 #include <boost/filesystem/operations.hpp>
 
+void Playlist::add(std::string uri) {
+    BOOST_LOG_TRIVIAL(debug) << "Playlist: adding URI: " << uri;
+    items_.emplace_back(uri);
+    if (!dirty_) {
+        // stop incrementing version if it's already dirty
+        version_++;
+    }
+    dirty_ = true;
+}
+
 void Playlist::enumerate(EnumPlaylistFn fn) const {
     for (const PlaylistItem &item : items_) {
         fn(item);
@@ -46,6 +56,30 @@ void Playlist::save(fs::path path, const std::string& filename) {
         }
         ofs << item.uri_;
     };
+    dirty_ = false;
+}
+
+void Playlist::load(const PlaylistInfo &plinfo) {
+    BOOST_LOG_TRIVIAL(debug) << "loading playlist " << plinfo.path_.string();
+    // NOTE silently clear the list here, even if it's dirty
+    items_.clear();
+    dirty_ = false;
+    version_ = 0;
+    std::ifstream ifs(plinfo.path_.string());
+    std::string line;
+    while (std::getline(ifs, line)) {
+        std::string name;
+        if (line.at(0) == '#') {
+            name = line.substr(2);
+            if (!std::getline(ifs, line)) {
+                BOOST_LOG_TRIVIAL(error) << "The playlist " << plinfo.name() << " is malformed! Aborting load";
+                items_.clear();
+                break;
+            }
+        }
+        BOOST_LOG_TRIVIAL(debug) << "load: appending " << line << ", name: " << name;
+        items_.emplace_back(line, name);
+    }
 }
 
 void PlaylistInfo::enumeratePlaylists(const fs::path& playlistsPath, EnumPlaylistsFn fn) {
@@ -58,5 +92,16 @@ void PlaylistInfo::enumeratePlaylists(const fs::path& playlistsPath, EnumPlaylis
             PlaylistInfo info(it->path());
             fn(info);
         }
+    }
+}
+PlaylistInfoPtr PlaylistInfo::fromPath(fs::path path, std::string name) {
+    assert(fs::exists(path));
+    name += ".m3u";
+    path /= name;
+    if (fs::exists(path)) {
+        return std::make_shared<PlaylistInfo>(path);
+    } else {
+        BOOST_LOG_TRIVIAL(warning) << "OOPS! Playlist " << path.string() << " not found";
+        return PlaylistInfoPtr();
     }
 }
