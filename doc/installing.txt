@@ -1,0 +1,40 @@
+= Installing vpd
+
+== Building from sources
+
+=== distribution specific libraries
+
+Instal required packages following your distribution.
+
+==== raspbian
+
+    sudo apt-get install cmake
+    sudo apt-get install libicu-dev
+
+.Note
+libboost version 1.54 or later is required
+
+==== archlinux ARM
+
+TODO
+
+==== all distributions
+
+If your linux distribution do not provide an enough recent version of libboost (e.g. version >1.54), then you should
+install boost libraries from the sources. Follow the instructions given on the boost.org site:
+http://www.boost.org/doc/libs/1_57_0/more/getting_started/index.html
+
+.Notes
+- Don't forget to install libicu prior to building the boost libraries
+- The building process of the boost libraries can take a whil, especially on the Raspberry PI systems
+
+=== build vpd
+
+    git clone <TODO put link to git repo here>
+    cd vpd
+    mkdir build
+    cmake ..
+    make
+    make install
+
+
