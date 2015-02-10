@@ -1,0 +1,46 @@
+VPD(1)
+======
+:doctype: manpage
+
+NAME
+----
+vpd - video player daemon
+
+SYNOPSIS
+--------
+*vpd* ['OPTIONS']
+
+DESCRIPTION
+-----------
+The video player daemon turns your system into a full featured yet
+simple video player, easy to remote control from your favourite device
+or your laptop.
+
+OPTIONS
+-------
+*-c,--config*='CONFIG_FILE'::
+    Use configuration file 'CONFIG_FILE' instead of the default ones.
+
+
+EXIT STATUS
+-----------
+*0*::
+    Success
+
+*1*::
+    Failure (see logs for more details about the failure)
+
+BUGS
+----
+Please report all bugs on the project web page : http://vpd.io/
+
+AUTHOR
+------
+VPD was originally written by Valentin Rusu. Many people contributed
+to it.
+
+COPYING
+-------
+Copyright \(C) 2014-2015 Valentin Rusu. Free use of this software is
+granted under the terms of the GNU General Public License (GPL).
+

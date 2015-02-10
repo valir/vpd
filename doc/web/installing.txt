@@ -1,0 +1,58 @@
+= Installing vpd
+
+== Building from sources
+
+=== distribution specific libraries
+
+Instal required packages following your distribution.
+
+==== raspbian wheezy
+
+    sudo apt-get install cmake
+    sudo apt-get install libicu-dev libarchive-dev
+
+
+.Notes
+- vpd uses C++14 features, and it needs GCC 4.9. If that's not provided by your system, then you'll need to install GCC4.9. See instructions below.
+- libboost version 1.54 or later is required. If they are not provided, then you'll need to build boost libraries from the sources. See below.
+
+===== Installing GCC 4.9
+
+Raspbian comes with a rather old GCC version. So you may want to follow the instructions below to get the 4.9 version.
+https://solarianprogrammer.com/2015/01/13/raspberry-pi-raspbian-install-gcc-compile-cpp-14-programs/
+
+.Note
+Users of the HiFiBerry card will also need to update the kernel modules and reapply the modules configuration. Please see this:
+https://www.hifiberry.com/guides/updating-the-linux-kernel/
+https://www.hifiberry.com/guides/configuring-linux-3-18-x/
+
+==== archlinux ARM
+
+TODO
+
+.Note
+- I'm not using this distribution, so please feel free to complete it and send me a patch!
+
+==== Building boost libraries from source
+
+If your linux distribution do not provide an enough recent version of libboost (e.g. version >1.54), then you should
+install boost libraries from the sources. Follow the instructions given on the boost.org site:
+http://www.boost.org/doc/libs/1_57_0/more/getting_started/index.html
+
+Plase ensure you're using GCC 4.9 or latest before building boost libraires.
+
+When selecting libraries, please use this command line:
+    ./bootstrap.sh --with-libraries=chrono,date_time,exception,filesystem,iostreams,locale,log,program_options,system,thread,timer
+
+.Notes
+- Don't forget to install libicu prior to building the boost libraries
+- The building process of the boost libraries can take a whil, especially on the Raspberry PI systems
+
+=== build vpd
+
+    git clone <TODO put link to git repo here>
+    cd vpd
+    mkdir build
+    cmake ..
+    make
+    make install
