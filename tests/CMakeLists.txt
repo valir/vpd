@@ -1,4 +1,4 @@
-find_package(Boost REQUIRED log filesystem system unit_test_framework thread)
+find_package(Boost REQUIRED log filesystem system thread)
 
 include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/lib)
