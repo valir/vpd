@@ -91,7 +91,7 @@ bool RuntimeConfig::ReadConfigFromFilesAndCmdLine(int argc, char *argv[]) {
     }
 
     if (!try_read_config_file(config_file, opts_config, vm)) {
-        if (!try_read_config_file("~/.config/vpdrc", opts_config, vm)) {
+        if (!try_read_config_file("~/.config/vpd/vpdrc", opts_config, vm)) {
             if (!try_read_config_file("~/.vpdrc", opts_config, vm)) {
                 BOOST_LOG_TRIVIAL(info) << "no configuration file found! Using default values.";
                 // load_default_config();
