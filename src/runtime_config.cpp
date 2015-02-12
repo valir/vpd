@@ -29,6 +29,11 @@ namespace po = boost::program_options;
 #include <iostream>
 #include <fstream>
 #include <iterator>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 #define DEFAULT_LISTEN_PORT 7700
 #define DEFAULT_LISTEN_ADDR "127.0.0.1"
@@ -40,12 +45,14 @@ int RuntimeConfig::listen_port_ = DEFAULT_LISTEN_PORT;
 string RuntimeConfig::listen_address_ = DEFAULT_LISTEN_ADDR;
 string RuntimeConfig::workdir_ = DEFAULT_WORKDIR;
 
+namespace fs = boost::filesystem;
+
 bool try_read_config_file(string config_file,
         const po::options_description &opts_config,
         po::variables_map &vm) {
     if (config_file.length() == 0)
         return false;
-    ifstream ifs(config_file.c_str());
+    ifstream ifs(config_file);
     if (!ifs) {
         BOOST_LOG_TRIVIAL(debug) << "cannot open configuration file: " << config_file << endl;
         return false;
@@ -90,11 +97,20 @@ bool RuntimeConfig::ReadConfigFromFilesAndCmdLine(int argc, char *argv[]) {
         return 0;
     }
 
+    struct passwd *pw = getpwuid(getuid());
+    const char *homedir = pw->pw_dir;
+
+    fs::path home(homedir);
+    string cfg1 = (home /= ".config/vpd/vpdrc").string();
+    string cfg2 = (home /= ".vpdrc").string();
+
     if (!try_read_config_file(config_file, opts_config, vm)) {
-        if (!try_read_config_file("~/.config/vpd/vpdrc", opts_config, vm)) {
-            if (!try_read_config_file("~/.vpdrc", opts_config, vm)) {
-                BOOST_LOG_TRIVIAL(info) << "no configuration file found! Using default values.";
-                // load_default_config();
+        if (!try_read_config_file(cfg1, opts_config, vm)) {
+            if (!try_read_config_file(cfg2, opts_config, vm)) {
+                if (!try_read_config_file("/etc/vpdrc", opts_config, vm)) {
+                    BOOST_LOG_TRIVIAL(info) << "no configuration file found! Using default values.";
+                    // load_default_config();
+                }
             }
         }
     }
