@@ -25,6 +25,20 @@
 #include <fstream>
 #include <boost/filesystem/operations.hpp>
 
+PlaylistItem Playlist::next() noexcept {
+    if (items_.empty() || current_ == items_.size()) {
+        return PlaylistItem();
+    } else {
+        return items_[current_++];
+    }
+}
+
+void Playlist::clear() {
+    items_.clear();
+    current_ = 0;
+    dirty_ = false;
+}
+
 void Playlist::add(std::string uri) {
     BOOST_LOG_TRIVIAL(debug) << "Playlist: adding URI: " << uri;
     items_.emplace_back(uri);

@@ -21,6 +21,13 @@ Instal required packages following your distribution.
 Raspbian comes with a rather old GCC version. So you may want to follow the instructions below to get the 4.9 version.
 https://solarianprogrammer.com/2015/01/13/raspberry-pi-raspbian-install-gcc-compile-cpp-14-programs/
 
+After installing GCC 4.9, place a link to it into your home directory like this :
+
+    cd ~/bin
+    ln -s /usr/bin/gcc-4.9 gcc
+    ln -s /usr/bin/g++-4.9 g++
+    ln -s g++ c++
+
 .Note
 Users of the HiFiBerry card will also need to update the kernel modules and reapply the modules configuration. Please see this:
 https://www.hifiberry.com/guides/updating-the-linux-kernel/

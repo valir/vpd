@@ -138,7 +138,7 @@ void enumeratePlaylist(EnumPlaylistFn fn) {
 }
 
 void clearPlaylist() {
-    Player::playlist().items_.clear();
+    Player::playlist().clear();
     stop();
 }
 

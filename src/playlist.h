@@ -48,16 +48,11 @@ struct Playlist
 {
     Playlist() : version_(0), current_(0), dirty_(false) {}
     void add(std::string uri);
-    PlaylistItem next() noexcept {
-        if (items_.empty() || current_ == items_.size()) {
-            return PlaylistItem();
-        } else {
-            return items_[current_++];
-        }
-    }
+    PlaylistItem next() noexcept;
     void enumerate(EnumPlaylistFn fn) const;
     void save(fs::path path, const std::string &name);
     void load(const PlaylistInfo& plinfo);
+    void clear();
 
     std::vector<PlaylistItem> items_;
     uint32_t version_;
