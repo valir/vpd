@@ -182,6 +182,17 @@ START_CMD_NOARGS(clear)
     session->clear();
     RETURN_OK()
 END_CMD()
+
+START_CMD_NOARGS(next)
+    session->next();
+    RETURN_OK()
+END_CMD()
+
+START_CMD_NOARGS(previous)
+    session->prev();
+    RETURN_OK()
+END_CMD()
+
 START_CMD_ARGS1(add)
     std::string uri = cmd->params()[0];
     if (!session->isValidUri(uri)) {
@@ -255,6 +266,8 @@ bool initKnownFactories() {
     REGISTER_CMD(close)
     REGISTER_CMD(play)
     REGISTER_CMD(stop)
+    REGISTER_CMD(next)
+    REGISTER_CMD(previous)
     REGISTER_CMD(clear)
     REGISTER_CMD(add)
     REGISTER_CMD(playlistinfo)
@@ -364,9 +377,17 @@ void ClientSession::play(int pos) {
 
 void ClientSession::stop() {
     socket_.get_io_service().post(
-        []() {
-            PlayEngine::stop();
-        });
+        []() { PlayEngine::stop(); });
+}
+
+void ClientSession::next() {
+    socket_.get_io_service().post(
+            [](){ PlayEngine::next(); });
+}
+
+void ClientSession::prev() {
+    socket_.get_io_service().post(
+            [](){ PlayEngine::prev(); });
 }
 
 void ClientSession::add(const std::string &uri) {

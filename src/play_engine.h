@@ -33,6 +33,8 @@ void sessionClosed(ClientEngine::ClientSessionPtr sessionPtr);
 void play(std::string uri);
 void play(int pos);
 void stop();
+void next();
+void prev();
 
 // playlist commands
 void add(const std::string& uri);

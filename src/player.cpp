@@ -155,20 +155,40 @@ bool play(std::string uri) {
     return true;
 }
 
-void play() {
-    for (;;) {
-        PlaylistItem item = playlist_.next();
-        if (item.empty()) {
-            BOOST_LOG_TRIVIAL(debug) << "Playlist is currently empty, or we reached its end.";
-            return;
-        }
+PlaylistItem currentPlaylistItem;
 
-        if (play(item.uri_))
+void play() {
+    currentPlaylistItem = playlist_.current();
+    if (currentPlaylistItem.empty()) {
+        BOOST_LOG_TRIVIAL(debug) << "Playlist is currently empty, or we reached its end.";
+        return;
+    }
+
+    for (;;) {
+        if (play(currentPlaylistItem.uri_))
             break;
         // no need to update status now. it'll get updated when client will ask for it
         // if the item could not be played, then automatically continue with next item
         BOOST_LOG_TRIVIAL(debug) << "Trying next item in the playlist";
+
+        currentPlaylistItem = playlist_.next();
+        if (currentPlaylistItem.empty()) {
+            BOOST_LOG_TRIVIAL(debug) << "Playlist is currently empty, or we reached its end.";
+            return;
+        }
     }
+}
+
+void next() {
+    stop();
+    currentPlaylistItem = playlist_.next();
+    play();
+}
+
+void prev() {
+    stop();
+    currentPlaylistItem = playlist_.prev();
+    play();
 }
 
 void stop() {

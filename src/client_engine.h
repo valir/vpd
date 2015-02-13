@@ -122,6 +122,8 @@ struct ClientSession : public std::enable_shared_from_this<ClientSession>
     void closeSession();
     void play(int pos);
     void stop();
+    void next();
+    void prev();
     void add(const std::string &uri);
     bool isValidUri(const std::string &uri) const noexcept;
     void enumeratePlaylist(EnumPlaylistFn fn);

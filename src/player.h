@@ -51,6 +51,8 @@ const Status& status();
 
 void play();
 void stop();
+void next();
+void prev();
 
 } // namespace
 #endif // PLAYER_H

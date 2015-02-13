@@ -49,6 +49,8 @@ struct Playlist
     Playlist() : version_(0), current_(0), dirty_(false) {}
     void add(std::string uri);
     PlaylistItem next() noexcept;
+    PlaylistItem prev() noexcept;
+    PlaylistItem current() noexcept;
     void enumerate(EnumPlaylistFn fn) const;
     void save(fs::path path, const std::string &name);
     void load(const PlaylistInfo& plinfo);

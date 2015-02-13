@@ -125,6 +125,14 @@ void play(int pos) {
     Player::play();
 }
 
+void next() {
+    Player::next();
+}
+
+void prev() {
+    Player::prev();
+}
+
 void stop() {
     Player::stop();
 }

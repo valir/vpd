@@ -25,11 +25,29 @@
 #include <fstream>
 #include <boost/filesystem/operations.hpp>
 
+PlaylistItem Playlist::current() noexcept {
+    if (items_.empty() || current_ == items_.size())
+        return PlaylistItem();
+    else
+        return items_[current_];
+}
+
 PlaylistItem Playlist::next() noexcept {
     if (items_.empty() || current_ == items_.size()) {
         return PlaylistItem();
     } else {
         return items_[current_++];
+    }
+}
+
+PlaylistItem Playlist::prev() noexcept {
+    if (current_ == 0) {
+        if (items_.empty())
+            return PlaylistItem();
+        else
+            return items_[0];
+    } else {
+        return items_[--current_];
     }
 }
 
