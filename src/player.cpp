@@ -124,8 +124,10 @@ PlayerExecPtr makeVlcExec(const char* uri) {
             // we are running on a RaspberryPI board, so let's activate the
             // video hardware acceleration module
             BOOST_LOG_TRIVIAL(info) << "detected RaspberryPI, activating omxil_vout";
-            args.insert(args.begin(), "--vout");
+            // NOTE we're inserting in reverse order as we're inserting at the
+            // beginning of the vector
             args.insert(args.begin(), "omxil_vout");
+            args.insert(args.begin(), "--vout");
         }
     } else {
         BOOST_LOG_TRIVIAL(warning) << "cannot read system information (uname) " << errno;
