@@ -11,6 +11,11 @@ Instal required packages following your distribution.
     sudo apt-get install cmake
     sudo apt-get install libicu-dev libarchive-dev
 
+.Note
+Users of the HiFiBerry card will also need to update the kernel modules and
+reapply the modules configuration. Please see this:
+https://www.hifiberry.com/guides/updating-the-linux-kernel/
+https://www.hifiberry.com/guides/configuring-linux-3-18-x/
 
 .Notes
 - vpd uses C++14 features, and it needs GCC 4.9. If that's not provided by your system, then you'll need to install GCC4.9. See instructions below.
@@ -19,19 +24,148 @@ Instal required packages following your distribution.
 ===== Installing GCC 4.9
 
 Raspbian comes with a rather old GCC version. So you may want to follow the instructions below to get the 4.9 version.
-https://solarianprogrammer.com/2015/01/13/raspberry-pi-raspbian-install-gcc-compile-cpp-14-programs/
 
-After installing GCC 4.9, place a link to it into your home directory like this :
+To speed things up, I strongly recommend using your main Linux machine to cross-compile using crosstools-ng (http://crosstool-ng.org/). If you're using Linux just follow these steps :
 
-    cd ~/bin
-    ln -s /usr/bin/gcc-4.9 gcc
-    ln -s /usr/bin/g++-4.9 g++
-    ln -s g++ c++
+    mkdir ~/raspberrypi
+    cd ~/raspberrypi
+    git clone git://crosstool-ng.org/crosstool-ng
+    cd crosstool-ng
+    ./bootstrap
+    ./configure --enable-local
+    make
 
-.Note
-Users of the HiFiBerry card will also need to update the kernel modules and reapply the modules configuration. Please see this:
-https://www.hifiberry.com/guides/updating-the-linux-kernel/
-https://www.hifiberry.com/guides/configuring-linux-3-18-x/
+Test it works by issuing
+
+    ./ct-ng help
+
+Now go edit your ~/.bashrc to include ~/raspberrypi/crosstool-ng in the PATH variable then
+
+    source ~/.bashrc
+    cd ~/raspberrypi
+    mkdir staging
+    cd staging
+    ct-ng menuconfig
+
+You'll now see a curses-base interfaces where you can set the crosstool-ng options:
+
+* Setup Path Options
+
+    Navigate to Paths and misc options.
+    Enable Try features marked as EXPERIMENTAL.
+    Set Prefix directory to ${HOME}/raspberrypi/tools/${CT_TARGET}.
+    Enable Use a mirror.
+    Set Number of parallel jobs to twice the number of HW threads (eg for a 4-core CPU with HyperThreading, use 16).
+
+* Setup Target Options
+
+    Navigate to Target options.
+    Set Target Architecture to arm.
+    Leave Endianness as Little and Bitness as 32-bit.
+    Set append ‘hf' to the tuple (EXPERIMENTAL).
+
+* Setup Operating System Options
+
+    Navigate to Operating System.
+    Set Target OS to Linux.
+
+* Setup Binary Utility Options
+
+    Navigate to Binary utilities.
+    Set Binutils to 2.22.
+
+* Setup Compiler Options
+
+    Navigate to C compiler.
+    Enable Show Linaro versions.
+    Enable C++ support.
+
+* Setup Debug Options
+
+    Navigate to Debug facilities.
+    Enable gdb, then press [Enter] to configure additional GDB settings.
+        Disable cross-gdb
+        Enable gdbserver and "build a static gdbserver"
+    Check "show Linaro versions" and select the last available option that is not marked EXPERIMENTAL
+    Enable ltrace.
+    Enable strace.
+
+* Exit and confirm to save the configuration file returning to your shell.
+
+Now, build the toolchain:
+
+  ./ct-ng build  
+
+Now once again edit you ~/.bashrc to include the directory ~/raspberrypi/tools/arm-unknown-linux-gnueabi/bin in the PATH then:
+
+  source ~/.bashrc
+  arm-unknown-linux-gnueabi-gcc --version
+
+You should see:
+
+  arm-unknown-linux-gnueabi-gcc (crosstool-NG 1.20.0) 4.9.3 20150209 (prerelease)
+  Copyright (C) 2014 Free Software Foundation, Inc.
+  This is free software; see the source for copying conditions.  There is NO
+  warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Finally, create this file:
+
+  cat > ~/raspberrypi/rpi.cmake <<EOF
+
+  SET(CMAKE_SYSTEM_NAME Linux)
+  SET(CMAKE_SYSTEM_PROCESSOR arm)
+
+  SET(CMAKE_C_COMPILER arm-unknown-linux-gnueabi-gcc)
+  SET(CMAKE_CXX_COMPILER arm-unknown-linux-gnueabi-g++)
+  SET(CMAKE_ASM_COMPILER arm-unknown-linux-gnueabi-gcc)
+
+  # where is the target environment
+  SET(CMAKE_FIND_ROOT_PATH
+      /home/${USER}/raspberrypi/run)
+
+  # search for programs in the build host directories
+  SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+  # for libraries and headers in the target directories
+  SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+  SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+  EOF
+
+This file is the toolchain definition for the cmake. As you may have noticed, the cross-compiled binaries should be placed in the /home/${USER}/raspberry/run directory. Let's create that directory:
+
+  mkdir ~/raspberrypi/run
+
+OK, now you have GCC installed. You're ready to compile the Boost libraries and then VPD.
+
+===== Compiling Boost Libraries
+
+Crate this file:
+
+    echo "using gcc : arm : arm-unknown-linux-gnueabi-g++ ;" > ~/user-config.jam
+
+Download the last Boost version from here: http://www.boost.org/
+
+    mkdir ~/raspberrypi/build
+    cd ~/raspberrypi/build
+    cp <downloaded boost libraries> .
+    tar xzvf boost_<version>.tgz
+    cd boost_<version>
+    ./bootstrap.sh
+    cat > b2_pi <<EOF
+    ./b2 link=static gcc-arm -j8 \
+        --prefix=/home/${USER}/raspberrypi/run/usr\
+        --without-context --without-coroutine install $1
+    EOF
+    chmod +x b2_pi
+    ./b2_pi
+
+If all gone right, then you should end with boost libraries in ~/raspberrypi/run/usr/[include/boost,lib]
+
+===== Compiling VPD
+
+    cd <your working directory>
+    git clone <VPD REPO URL>
+    cd vpd
+    ./build_for_pi
 
 ==== archlinux ARM
 

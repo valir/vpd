@@ -6,11 +6,11 @@ else
     rm -rf build_pi/*
 fi
 
-export BOOST_ROOT=/home/valentin/raspberrypi/run/usr
+export BOOST_ROOT=/home/${USER}/raspberrypi/run/usr
 
 pushd build_pi
 cmake \
-    -DCMAKE_INSTALL_PREFIX:PATH=/home/valentin/raspberrypi/run/usr \
+    -DCMAKE_INSTALL_PREFIX:PATH="/home/${USER}/raspberrypi/run/usr" \
     -DCMAKE_TOOLCHAIN_FILE=~/raspberrypi/rpi.cmake ..
 
 make -j8
