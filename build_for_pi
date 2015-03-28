@@ -1,0 +1,17 @@
+#!/bin/bash
+if [ ! -d build_pi ]
+then
+    mkdir build_pi
+else
+    rm -rf build_pi/*
+fi
+
+export BOOST_ROOT=/home/valentin/raspberrypi/run/usr
+
+pushd build_pi
+cmake \
+    -DCMAKE_INSTALL_PREFIX:PATH=/home/valentin/raspberrypi/run/usr \
+    -DCMAKE_TOOLCHAIN_FILE=~/raspberrypi/rpi.cmake ..
+
+make -j8
+

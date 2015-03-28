@@ -1,4 +1,8 @@
 find_package(Boost REQUIRED log filesystem system thread)
+message("Boost_INCLUDE_DIR = " ${Boost_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(
+    ${Boost_INCLUDE_DIR}
+)
 
 include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/lib)

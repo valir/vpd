@@ -24,7 +24,6 @@
 
 #include <iostream>
 #include <thread>
-#include <future>
 #include <boost/log/trivial.hpp>
 #include <boost/test/minimal.hpp>
 
@@ -35,8 +34,7 @@ int test_main(int argc, char* argv[]) {
         RuntimeConfig config;
         config.ReadConfigFromFilesAndCmdLine(argc, argv);
 
-        auto pef = std::async(launch::async, PlayEngine::start, config);
-        return pef.get();
+        return PlayEngine::start(config);
     }
     catch (exception &e) {
         cerr << "error: " << e.what() << "\n";

@@ -21,5 +21,5 @@ foreach(m IN LISTS MAN_NAMES)
 endforeach()
 
 add_custom_target(man ALL DEPENDS ${MAN_FILES})
-install(FILES ${MAN_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/man/man1)
+install(FILES ${MAN_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
 
