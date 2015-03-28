@@ -86,7 +86,7 @@ using AckStatusPtr = std::shared_ptr<AckStatus>;
 
 struct ClientMessage
 {
-    static constexpr auto max_cmd_length = 100;
+    static constexpr auto max_cmd_length = 1024;
     static constexpr auto max_response_length = 1024;
     ClientMessage() : commandBuffer_(max_cmd_length) {}
     void setResponse(std::string response) {

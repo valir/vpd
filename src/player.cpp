@@ -27,6 +27,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/array.hpp>
+#include <sys/utsname.h>
 
 namespace Player {
 
@@ -112,7 +113,28 @@ using PlayerExecPtr = std::shared_ptr<PlayerExec>;
 
 std::vector<PlayerExecPtr> players_;
 
-int playSopcast(std::string uri) {
+PlayerExecPtr makeVlcExec(const char* uri) {
+    PlayerExec::args_vector args = {
+        uri
+    };
+    struct utsname sysinfo;
+    if (0 == uname(&sysinfo)) {
+        BOOST_LOG_TRIVIAL(info) << "prepare to launch VLC on " << sysinfo.machine << " system";
+        if (strncmp(sysinfo.machine, "arm", 3) == 0) {
+            // we are running on a RaspberryPI board, so let's activate the
+            // video hardware acceleration module
+            BOOST_LOG_TRIVIAL(info) << "detected RaspberryPI, activating omxil_vout";
+            args.insert(args.begin(), "--vout");
+            args.insert(args.begin(), "omxil_vout");
+        }
+    } else {
+        BOOST_LOG_TRIVIAL(warning) << "cannot read system information (uname) " << errno;
+    }
+    // TODO let the cvlc exec name be configurable
+    return std::make_shared<PlayerExec>("cvlc", args);
+}
+
+bool playSopcast(std::string uri) {
     using namespace std::literals;
     // TODO this should be configurable as it platform dependant
     // protv uri : "sop://broker.sopcast.com:3912/151929"
@@ -120,21 +142,61 @@ int playSopcast(std::string uri) {
     PlayerExecPtr sopcast = std::make_shared<PlayerExec>("sp-sc-auth", args);
     players_.push_back(sopcast);
 
-
-    args = {
-        // TODO add an ifdef here to insert these two arguments on the RPI platform
-        //        "--vout", "omxil_vout",
-        "http://localhost:12345/tv.asf"
-    };
-    // TODO let the cvlc exec name be configurable
-    PlayerExecPtr vlc = std::make_shared<PlayerExec>("cvlc", args);
+    auto vlc = makeVlcExec("http://localhost:12345/tv.asf");
     players_.push_back(vlc);
 
     sopcast->start();
     std::this_thread::sleep_for(5s);
     vlc->start();
 
-    return 0;
+    return true;
+}
+
+void urldecode2(char *dst, const char *src)
+{
+    char a, b;
+    while (*src) {
+        if ((*src == '%') &&
+            ((a = src[1]) && (b = src[2])) &&
+            (isxdigit(a) && isxdigit(b))) {
+                if (a >= 'a')
+                        a -= 'a'-'A';
+                if (a >= 'A')
+                        a -= ('A' - 10);
+                else
+                        a -= '0';
+                if (b >= 'a')
+                        b -= 'a'-'A';
+                if (b >= 'A')
+                        b -= ('A' - 10);
+                else
+                        b -= '0';
+                *dst++ = 16*a+b;
+                src+=3;
+        } else {
+                *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+}
+
+bool playFile(std::string uri) {
+    auto file_uri = uri.substr(std::string("file://").size());
+    BOOST_LOG_TRIVIAL(debug) << "file_uri " << file_uri;
+    char* decoded = (char*)malloc(file_uri.size());
+    if (nullptr == decoded) {
+        BOOST_LOG_TRIVIAL(error) << "Out of memory!";
+        return false;
+    }
+    urldecode2(decoded, file_uri.c_str());
+    BOOST_LOG_TRIVIAL(debug) << "file_uri decoded '" << decoded << "'";
+
+    auto vlc = makeVlcExec(decoded);
+    players_.push_back(vlc);
+    vlc->start();
+
+    free(decoded);
+    return true;
 }
 
 bool play(std::string uri) {
@@ -148,6 +210,8 @@ bool play(std::string uri) {
     std::string proto = uri.substr(0, proto_end);
     if (proto == "sop") {
         return playSopcast(uri);
+    } else if (proto == "file") {
+        return playFile(uri);
     } else {
         BOOST_LOG_TRIVIAL(warning) << "uri protocol not recognized. skipping.";
         return false;
