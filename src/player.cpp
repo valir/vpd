@@ -115,7 +115,7 @@ std::vector<PlayerExecPtr> players_;
 
 PlayerExecPtr makeVlcExec(const char* uri) {
     PlayerExec::args_vector args = {
-        uri
+        "-I", "rc" // this is the text console of VLC where we we'll connect to sent it commands
     };
     struct utsname sysinfo;
     if (0 == uname(&sysinfo)) {
@@ -126,12 +126,13 @@ PlayerExecPtr makeVlcExec(const char* uri) {
             BOOST_LOG_TRIVIAL(info) << "detected RaspberryPI, activating omxil_vout";
             // NOTE we're inserting in reverse order as we're inserting at the
             // beginning of the vector
-            args.insert(args.begin(), "omxil_vout");
-            args.insert(args.begin(), "--vout");
+            args.push_back(args.begin(), "--vout");
+            args.push_back(args.begin(), "omxil_vout");
         }
     } else {
         BOOST_LOG_TRIVIAL(warning) << "cannot read system information (uname) " << errno;
     }
+    args.push_back(uri);
     // TODO let the cvlc exec name be configurable
     return std::make_shared<PlayerExec>("cvlc", args);
 }
