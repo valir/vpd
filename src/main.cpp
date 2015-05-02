@@ -30,18 +30,16 @@
 using namespace std;
 
 int test_main(int argc, char* argv[]) {
-    try {
-        RuntimeConfig config;
-        config.ReadConfigFromFilesAndCmdLine(argc, argv);
+  try {
+    RuntimeConfig config;
+    config.ReadConfigFromFilesAndCmdLine(argc, argv);
 
-        return PlayEngine::start(config);
-    }
-    catch (exception &e) {
-        cerr << "error: " << e.what() << "\n";
-        return 1;
-    }
-    catch (...){
-        cerr << "Exception of unknown type!\n";
-    }
-    return 0;
+    return PlayEngine::start(config);
+  } catch (exception& e) {
+    cerr << "error: " << e.what() << "\n";
+    return 1;
+  } catch (...) {
+    cerr << "Exception of unknown type!\n";
+  }
+  return 0;
 }

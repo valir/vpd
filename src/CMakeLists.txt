@@ -3,9 +3,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lib)
 
-#add_definitions(-DBOOST_LOG_DYN_LINK) # fix boost log link errors
+add_definitions(-DBOOST_LOG_DYN_LINK) # fix boost log link errors
 
-find_package(Boost REQUIRED program_options log filesystem system thread regex)
+find_package(Boost REQUIRED
+  program_options log filesystem system thread regex
+  iostreams)
 message("Boost_INCLUDE_DIR = " ${Boost_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(
     ${Boost_INCLUDE_DIR}
