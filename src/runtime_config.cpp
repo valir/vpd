@@ -1,7 +1,7 @@
 /*
  * This file is part of the VPD project
  *
- * Copyright (C) 2014 Valentin Rusu kde@rusu.info
+ * Copyright (C) 2014 Valentin Rusu vpd@rusu.info
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
