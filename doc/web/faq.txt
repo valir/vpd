@@ -1,21 +1,50 @@
+= The vpd FAQ
+:icons: font
+:toc:
 
-= Why start a new video player?
+== Why start a new video player?
 
-Well, vpd is not really a video player. Instead, it uses well established and awesome vlc to render the videos. However,
-vlc lacks a remote capable daemon mode, and that's vpd's job!
+Well, vpd is not really a video player. Instead, it uses well established and
+awesome vlc to render the videos. However, vlc lacks a remote capable daemon
+mode, and that's vpd's job! Advanced vlc users may ask why not just add a new
+"interface" to vlc? Well, that would not allow cascading player programs or
+even using another player instead of vlc, depending on the URI to be played.
 
-= Why did you start this project?
+== Why did you start this project?
 
-I started this project when I realized that I cannot find a suitable media center capable of playing nicely with my
-HiFiBerry and with the Raspberry PI B+'s video decoding hardware at the same time. vlc actually can do that but it's
-remote capabilities are somewhat limited. Besides, I recently switched to mpd and find it's capabilities really awesome.
-I wanted the same for my video streams and files.
+I started this project when I realized that I cannot find a suitable media
+center capable of playing nicely with my HiFiBerry and with the Raspberry PI
+B+'s video decoding hardware at the same time. vlc actually can do that but
+it's remote capabilities are somewhat limited. Besides, I recently switched to
+mpd and find it's capabilities really awesome. I wanted the same for my video
+streams and files.
 
-= What's the pilosophy of the vpd project?
+== What's the pilosophy of the vpd project?
 
-VPD aims to follow the Unix philosophy, so it'll stay simple and will to one single job - orchestrate system tools to play videos on your dedicated hardware. It'll allow you to do that in the simplest manner, using simple command-line tools or smartphone remotes. So you'll never see no stinking "up/down" remote control! I think that kind of remote control is simply not suited for the task of remote controlling something. It was invented at the ages where embedded systems were very expensive to produce. At that time we used simple logic circuits to control the state of some analog circuitry which was the TV-set. Why reproduce that kind of remote control today when a simple Raspberry PI had more power than my first PC and it successfully replaced my TV-set? Remember, we like new technologies and keeping the old fashioned remote with it's dumb up/dow/left/right only buttons is simply unacceptable.
+VPD aims to follow the Unix philosophy, so it'll stay simple and will do one
+single job - orchestrate system tools to play videos on your dedicated
+hardware. It'll allow you to do that in the simplest manner, using simple
+command-line tools or smartphone remotes. So you'll never see no stinking
+"up/down" remote control! I think that kind of remote control is simply not
+suited for the task of remote controlling something. It was invented at the
+ages where embedded systems were very expensive to produce. At that time we
+used simple logic circuits to control the state of some analog circuitry which
+was the TV-set. Why reproduce that kind of remote control today when a simple
+Raspberry PI had more power than my first PC and it successfully replaced my
+TV-set? Remember, we like new technologies and keeping the old fashioned
+remote with it's dumb up/dow/left/right only buttons is simply unacceptable.
 
-= Why did you use raspbian wheezy?
+== Why did you use raspbian wheezy?
 
-The sound of my Raspberry PI B+ is quite distorted, especially at low volumes. Therefore, I discovered and bought the HiFiBerry sound card and it's amazing sound. At the time of this writing, it works correctly, out-of-the-box only on raspbian. So, event if I'm an Archlinux addict, I was forced to stay with Raspbian wheezy and it's rather old packages. The installation process in this platform is rather long, but it's worth the effort, in my opinion. And soon the jessie version will be out and all these problems will be gone.
+The sound of my Raspberry PI B+ is quite distorted, especially at low volumes.
+Therefore, I discovered and bought the
+link:https://www.hifiberry.com/[HiFiBerry] sound card and it's amazing sound.
+At the time of this writing, it works correctly, out-of-the-box only on
+raspbian. So, even if I'm an link:http://archlinux.org[Archlinux] addict, I
+was forced to stay with link:http://www.raspbian.org/[Raspbian] wheezy and
+it's rather old packages. The installation process in this platform is rather
+long, but it's worth the effort, in my opinion. And soon the jessie version
+will be out and all these problems will be gone. Alternatively you may set-up
+a crosscompiling environment, as described in the
+link:installing.html[Installing] section.
 

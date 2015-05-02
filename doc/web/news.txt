@@ -2,7 +2,13 @@
 = vpd news
 Check project progress here
 
-=== vpd project started
+== vpd.io domain created
+Posted: February 02, 2015
+
+OK, I decided to get a shiny new domain for vpd and fortunately the .io domain was readily available! I took no chance
+and reserved it right away.
+
+== vpd project started
 Posted: December 3, 2014
 
 The first running executable seen the light, aiming to be my future video player :-)

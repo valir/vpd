@@ -1,7 +1,13 @@
+= The _vpd_ project
+:icons: font
+:keywords: vpd, vlc, mpd, RaspberryPI
+:description: _vpd_ is a lightweight server-side application for    +
+              playing videos. It relies on vlc for video rendering, +
+              while being controlled by its network protocol.
 
-= vpd home page
-vpd is a a lightweight server-side application for playing videos. It relies on vlc for video rendering, while being
-controlled by its network protocol.
+{description} It aims to be similar to link:http://www.musicpd.org/[_mpd_] but dedicated to
+video playing.
+
 
 == News
 
@@ -11,15 +17,16 @@ Posted: February 02, 2015
 OK, I decided to get a shiny new domain for vpd and fortunately the .io domain was readily available! I took no chance
 and reserved it right away.
 
-link:news[Read more news...]
+link:news.html[Read more news...]
 
 == Installing
 
-No release is available for the moment. You may consider installing from the sources.
+No release is available for the moment.
+You may consider link:compiling.html[installing from the sources]
 
 == Getting help
 
-* Read the documentation and the manpage
+* Read the documentation, the manpage and the link:faq.html[FAQ]
 * Check the log file (--verbose option)
 * Make sure you have the latest version of vpd
 * Submit a bug report
@@ -28,7 +35,7 @@ No release is available for the moment. You may consider installing from the sou
 == Contributing
 
 vpd is a new project. Help is definitely needed in the following areas:
-- testing and bug reporting (also, whishes are walcome)
+- testing and bug reporting (also, wishes are welcome)
 - translating this website
 - adding an android remote
 - adding an iPhone/iOS remote

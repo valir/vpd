@@ -1,10 +1,14 @@
-= Installing vpd
+= Installing vpd from the sources
+:icons: font
+:toc:
+:homepage: http://vpd.io
 
+The vpd project uses C++ and the boost libraries. It also uses vlc
 == Building from sources
 
 === distribution specific libraries
 
-Instal required packages following your distribution.
+Install required packages following your distribution.
 
 ==== raspbian wheezy
 
